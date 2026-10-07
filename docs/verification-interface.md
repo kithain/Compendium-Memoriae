@@ -38,6 +38,22 @@ Les parcours suivants ont été vérifiés avec des messages fictifs :
 
 La suite PostgreSQL comprend **45 tests**, dont 17 consacrés à la suppression des annotations : auteur, séparation des campagnes, droits des joueurs et du MJ, versions concurrentes, fiches privées ou supprimées, texte effacé en base et impossibilité de modifier la trace. Les tests utilisent PGlite et des campagnes fictives.
 
+## Présentation compacte des notes
+
+La section affiche désormais un seul titre « Notes du groupe ». Le sous-titre décoratif, le pictogramme de section, la phrase d’aide, les avatars et la signature répétée sous le formulaire ont été retirés. Les notes conservent leur auteur, une date courte et leur texte intégral ; la date avec son heure et son éventuel statut de modification/suppression reste disponible dans le libellé accessible et au survol. Le formulaire commence sur deux lignes et reste redimensionnable.
+
+Comparaison avec les trois mêmes messages fictifs, dont un message long et un auteur long :
+
+| Fenêtre | Hauteur avant | Hauteur après | Espace libéré |
+| --- | --- | --- | --- |
+| 1024 × 600 | 1024 px | 565 px | 459 px |
+| 390 × 844 | 1308 px | 762 px | 546 px |
+| 320 × 568 | 1661 px | 788 px | 873 px |
+
+Le titre passe à environ 25 px de hauteur et le formulaire à 124 px. Ces mesures portent sur la section entière défilante ; sa hauteur dépend toujours du contenu des messages.
+
+Les 28 combinaisons de formats, rôles et vues ont été revérifiées : texte et saisie à 16 px, boutons tactiles de 44 px jusqu’à 1024 px, auteurs longs sans débordement, page contenue dans la fenêtre et conservation des deux défilements. Les parcours d’ajout, d’édition et de suppression d’une note fictive, ainsi que la protection du brouillon lors d’un changement de vue, ont été vérifiés avec les nouveaux libellés.
+
 ## Contrôle du schéma déployé
 
 La migration `compendium_author_annotation_deletion` a été appliquée au projet DiceForge. Vérifications : RPC indisponible pour `anon`, disponible pour `authenticated`, aucun droit direct de modification sur la table privée, fonction de sérialisation privée non exposée et contrainte imposant le texte de remplacement aux messages supprimés.

@@ -32,6 +32,10 @@ const stamp = (value: string) => new Intl.DateTimeFormat('fr-FR', {
   dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris',
 }).format(new Date(value));
 
+const noteDate = (value: string) => new Intl.DateTimeFormat('fr-FR', {
+  dateStyle: 'medium', timeZone: 'Europe/Paris',
+}).format(new Date(value));
+
 const asDraft = (fiche: Fiche): FicheDraft => ({
   type: fiche.type, name: fiche.name, subtitle: fiche.subtitle,
   location: fiche.location, summary: fiche.summary,
@@ -480,20 +484,19 @@ export default function Compendium({
               <div className="fiche-official-footer"><span>{trash ? 'Fiche supprimée le' : 'Fiche mise à jour le'} {stamp(selected.deletedAt || selected.updatedAt)}</span>{gmView && <div className="fiche-management">{trash ? <button className="secondary" disabled={busy} onClick={() => void moveFiche(selected, true)}><Undo2 size={15}/>{moving ? 'Restauration…' : 'Restaurer en brouillon'}</button> : <><button className="secondary" onClick={edit} disabled={busy}><Pencil size={15} />Modifier la fiche</button><button className="secondary danger" disabled={busy} onClick={() => guard(() => {setDeleteError(''); setDeleteTarget(selected);})}><Trash2 size={15}/>Supprimer</button></>}</div>}</div>
             </article>
             {!trash && <section className="annotations" aria-label="Annotations des joueurs">
-              <div className="annotations-heading"><div><span className="eyebrow">LA MÉMOIRE DU GROUPE</span><h2>Vos annotations <span>{annotations.length}</span></h2></div><MessageSquare size={22} /></div>
-              <p className="annotation-help">Observations, souvenirs et théories du groupe, à côté de la fiche du MJ.</p>
+              <div className="annotations-heading"><h2>Notes du groupe <span>({annotations.length})</span></h2></div>
               {noteLoading ? <p className="annotation-help" role="status">Chargement des annotations…</p> : annotations.length ? <div className="annotation-list">{annotations.map(note =>
-                <article key={note.id} className={`annotation${note.deletedAt ? ' annotation-deleted' : ''}`}><header><span className="avatar">{note.author.charAt(0).toUpperCase()}</span><div className="annotation-author"><strong>{note.author}</strong><time dateTime={note.deletedAt || note.updatedAt}>{stamp(note.deletedAt || note.updatedAt)}{note.deletedAt ? ' · supprimé' : note.updatedAt !== note.createdAt ? ' · modifiée' : ''}</time></div><div className="annotation-tools">{note.canEdit && !note.deletedAt && <button className="icon-button" aria-label={`Modifier votre annotation du ${stamp(note.updatedAt)}`} onClick={() => guard(() => {
+                <article key={note.id} className={`annotation${note.deletedAt ? ' annotation-deleted' : ''}`}><header><div className="annotation-author"><strong>{note.author}</strong><time dateTime={note.deletedAt || note.updatedAt} title={`${note.deletedAt ? 'Supprimé le ' : note.updatedAt !== note.createdAt ? 'Modifiée le ' : ''}${stamp(note.deletedAt || note.updatedAt)}`} aria-label={`${note.deletedAt ? 'Supprimé le ' : note.updatedAt !== note.createdAt ? 'Modifiée le ' : ''}${stamp(note.deletedAt || note.updatedAt)}`}>{noteDate(note.deletedAt || note.updatedAt)}</time></div><div className="annotation-tools">{note.canEdit && !note.deletedAt && <button className="icon-button" aria-label={`Modifier votre annotation du ${stamp(note.updatedAt)}`} onClick={() => guard(() => {
                   noteFicheId.current = note.ficheId; setEditingAnnotation(note); setAnnotationBody(note.body); setNoteError('');
                 })} disabled={busy}><Pencil size={15} /></button>}{note.canDelete && !note.deletedAt && <button className="icon-button danger" aria-label={`Supprimer votre annotation du ${stamp(note.updatedAt)}`} disabled={busy} onClick={event => {noteDeleteTrigger.current = event.currentTarget; setNoteDeleteError(''); setNoteDeleteTarget(note);}}><Trash2 size={15}/></button>}</div></header><p>{note.deletedAt ? 'Message supprimé par l’utilisateur.' : note.body}</p></article>,
               )}</div> : <p className="annotation-empty">Aucune annotation pour le moment.</p>}
               <form className="annotation-form" onSubmit={event => { event.preventDefault(); void saveNote(); }}>
-                <label htmlFor="annotation-body">{editingAnnotation ? 'Modifier votre annotation' : 'Ajouter une annotation'}</label>
+                <label htmlFor="annotation-body" className={editingAnnotation ? undefined : 'sr-only'}>{editingAnnotation ? 'Modifier votre annotation' : 'Ajouter une annotation'}</label>
                 <textarea id="annotation-body" value={annotationBody} onChange={event => {
                   noteFicheId.current = selected.id; setAnnotationBody(event.target.value);
-                }} required maxLength={6000} disabled={busy} placeholder="Une information à retenir, une hypothèse, une rencontre…" />
+                }} rows={2} required maxLength={6000} disabled={busy} placeholder="Écrire une note…" />
                 {noteError && <p className="save-error" role="alert">{noteError}</p>}
-                <div className="annotation-actions"><span>Visible par le groupe · signé {userName}</span><div>{editingAnnotation && <button type="button" className="secondary" onClick={() => guard(resetNote)} disabled={busy}>Annuler</button>}<button type="submit" className="primary" disabled={!annotationBody.trim() || busy}><MessageSquare size={16} />{noteSaving ? 'Enregistrement…' : editingAnnotation ? 'Enregistrer' : 'Ajouter ma note'}</button></div></div>
+                <div className="annotation-actions"><div>{editingAnnotation && <button type="button" className="secondary" onClick={() => guard(resetNote)} disabled={busy}>Annuler</button>}<button type="submit" className="primary" disabled={!annotationBody.trim() || busy}>{noteSaving ? 'Enregistrement…' : editingAnnotation ? 'Enregistrer' : 'Ajouter'}</button></div></div>
               </form>
             </section>}
           </> : <article className="journal-page">

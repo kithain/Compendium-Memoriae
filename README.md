@@ -12,6 +12,8 @@ Le MJ voit les brouillons, crée et modifie les fiches, puis décide lesquelles 
 
 La corbeille à côté d’une annotation ouvre une confirmation de suppression. Seul son auteur dispose de cette action, y compris côté serveur : le MJ ne peut pas supprimer les messages des autres joueurs. Le texte est effacé et remplacé par **« Message supprimé par l’utilisateur. »**, avec l’auteur et la date conservés. Cette suppression ne peut pas être annulée ; la trace reste à sa place dans la conversation et ne peut plus être modifiée. Les autres brouillons en cours restent intacts.
 
+La section **Notes du groupe** présente les messages dans une liste compacte : auteur, date discrète et texte complet. Les boutons de modification et de suppression restent à côté des messages de leur auteur. Le champ **Écrire une note…** tient sur deux lignes et conserve la possibilité de s’agrandir.
+
 Les vues Lieux et PNJ disposent de deux défilements indépendants : la liste de navigation et le panneau de fiche, qui contient aussi les annotations. Le défilement reste dans le panneau utilisé, même à sa fin. La fiche sélectionnée reste surlignée ; sélectionner une nouvelle fiche remet uniquement son panneau de lecture en haut. Sur mobile, **Choisir une fiche** ouvre la liste au-dessus du lecteur. Elle se replie après une sélection pour libérer l’espace de lecture, puis retrouve la fiche active à sa réouverture. Les petites fenêtres en paysage conservent les deux colonnes.
 
 La lecture n’est pas interrompue par une actualisation périodique ou au retour sur l’onglet. Le bouton **Actualiser les fiches**, à côté du titre de la liste, récupère les changements des autres membres de la campagne. Vos enregistrements et imports mettent immédiatement à jour les données affichées.

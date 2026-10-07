@@ -361,13 +361,24 @@
 .fiche-list:focus-visible, .page-area:focus-visible { outline: 2px solid #d0a063; outline-offset: -2px; }
 .workspace-footer { flex-shrink: 0; align-items: center; margin-top: 12px; }
 .workspace-footer-actions { display: flex; align-items: center; gap: 18px; }
-.annotation header > .avatar { flex-shrink: 0; }
-.annotation-author { min-width: 0; flex: 1; }
+.annotations { margin-top: 20px; padding: 16px 0 0; border: 0; border-top: 1px solid #405762; border-radius: 0; background: transparent; }
+.annotations-heading h2 { margin: 0; font-family: 'Segoe UI', Arial, sans-serif; font-size: 1.125rem; font-weight: 600; line-height: 1.4; }
+.annotations-heading h2 span { display: inline; height: auto; min-width: 0; margin-left: 4px; border: 0; background: none; color: #adc2cb; font-size: .875rem; font-weight: 400; }
+.annotation-list { gap: 0; margin: 10px 0 14px; }
+.annotation { padding: 10px 0; border: 0; border-bottom: 1px solid #304b59; border-radius: 0; background: transparent; }
+.annotation header { align-items: center; }
+.annotation > p { margin: 6px 0 0; font-size: 1rem; line-height: 1.6; }
+.annotation-author { min-width: 0; flex: 1; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; row-gap: 2px; }
+.annotation-author strong { color: #dce7eb; }
 .annotation-author time { overflow-wrap: anywhere; }
 .annotation-tools { display: flex; gap: 4px; flex-shrink: 0; }
 .annotation header .annotation-tools .icon-button { margin-left: 0; }
-.annotation-deleted { border-left-color: #627985; background: #1b3340; }
+.annotation-deleted { background: transparent; }
 .annotation-deleted > p { color: #b0c1c9; font-style: italic; }
+.annotation-empty { padding: 12px 0; font-family: inherit; font-size: .875rem; }
+.annotation-form { padding-top: 0; border-top: 0; position: relative; }
+.annotation-form textarea { display: block; min-height: 72px; padding: 10px 12px; line-height: 1.5; }
+.annotation-actions { justify-content: flex-end; gap: 8px; margin-top: 8px; }
 .annotation-delete-preview { padding: 12px; border-left: 2px solid #6f949b; background: #203c49; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 150px; overflow: auto; }
 .annotation-delete-warning { color: #ecd7b9; font-size: .875rem; }
 .mobile-action-label { display: none; }

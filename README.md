@@ -10,6 +10,8 @@ Connectez-vous avec votre nom de joueur et votre mot de passe Dice-Forge, puis e
 
 Le MJ voit les brouillons, crée et modifie les fiches, puis décide lesquelles publier. Les joueurs voient uniquement les fiches publiées et ajoutent leurs annotations. Chacun peut modifier ses propres annotations ; le texte officiel reste réservé au MJ. Les fiches et notes sont partagées entre les salons rattachés à la même campagne.
 
+Le bouton **Supprimer**, en bas de la fiche à côté de **Modifier la fiche**, est réservé au MJ. Une confirmation affiche le nom de la fiche avant de la déplacer dans la **Corbeille**. Les joueurs perdent l’accès à la fiche, à ses annotations et à son image. Le MJ peut la récupérer avec **Restaurer en brouillon** ; les annotations et l’image sont conservées, et la fiche doit être republiée explicitement. Les numéros de version protègent aussi la suppression et la restauration contre les modifications concurrentes. Un nouvel import ne recrée pas une fiche encore dans la corbeille.
+
 Les illustrations associées s’affichent dans leur fiche au format 4:3 (400 × 300). Elles sont conservées dans le bucket privé Supabase `compendium-images` et héritent des droits de la fiche : le MJ voit les brouillons, les membres de la campagne voient les images des fiches publiées. Le navigateur les télécharge avec sa session puis affiche un objet Blob temporaire.
 
 Les fichiers placés localement dans `public/images/` sont des sources de travail : ce dossier est ignoré par Git et Vite ne le publie pas. Les associations et les fichiers de transfert restent dans `.private/` ; ni les illustrations privées ni la liste des personnages ne sont incluses dans les fichiers statiques du site.
@@ -42,6 +44,8 @@ Les tests PostgreSQL tournent localement avec PGlite et des campagnes fictives. 
 Le schéma Dice-Forge (`diceforge_v2.campaigns`, `campaign_rooms`, `mj_users`, `public.room_members` et Supabase Auth) doit déjà être installé. Appliquez ensuite `supabase/schema.sql` : il ajoute uniquement les tables et fonctions Compendium. Il ne recrée pas les tables Dice-Forge.
 
 Pour les illustrations, appliquez ensuite `supabase/images.sql` une fois. Ce complément ajoute la référence d’image et le bucket privé avec sa politique de lecture. Les imports de fichiers sont réalisés par l’administrateur ; les clients du site disposent uniquement du droit de lecture des images autorisées. Utilisez une clé d’objet distincte pour chaque campagne et fiche. Une modification du texte conserve la référence d’image existante.
+
+Appliquez enfin `supabase/deletion.sql` pour la corbeille, après les deux scripts précédents. Ce complément ajoute `deleted_at`, les fonctions de suppression/restauration et le filtrage des fiches supprimées dans toutes les lectures, écritures et autorisations d’images. L’application utilise une suppression récupérable ; aucun bouton ne purge définitivement les contenus.
 
 Le MJ peut importer un export JSON privé depuis le panneau « Importer des fiches en brouillon ». Chaque objet contient `id` (UUID), `type` (`place` ou `npc`), `name`, `subtitle`, `location`, `summary` et `description`. Toutes les fiches importées démarrent privées. Un nouvel import ignore les identifiants déjà présents et préserve leurs modifications et annotations. Les exports restent hors du dépôt, dans `.private/` par exemple.
 

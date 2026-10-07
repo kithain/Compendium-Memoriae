@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ArrowLeft, BookOpen, Eye, LogOut, MapPin, MessageSquare,
-  Pencil, Plus, RefreshCw, Save, Search, Users,
+  Pencil, Plus, RefreshCw, Save, Search, Trash2, Undo2, Users,
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import type { CompendiumApi } from './api';
@@ -50,6 +50,11 @@ export default function Compendium({
   const [id, setId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [preview, setPreview] = useState(false);
+  const [trash, setTrash] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Fiche | null>(null);
+  const [deleteError, setDeleteError] = useState('');
+  const moveInFlight = useRef(false);
   const [draft, setDraft] = useState<FicheDraft | null>(null);
   const [base, setBase] = useState<Fiche | null>(null);
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -76,7 +81,7 @@ export default function Compendium({
   apiRef.current = api;
 
   const playerView = !isGM || preview;
-  const collection = fiches.filter(fiche => fiche.type === type && (!playerView || fiche.published));
+  const collection = fiches.filter(fiche => fiche.type === type && !!fiche.deletedAt === trash && (!playerView || fiche.published));
   const search = searchable(query.trim());
   const rows = search ? collection.filter(fiche => searchable(
     `${fiche.name} ${fiche.subtitle} ${fiche.location}`,
@@ -86,14 +91,14 @@ export default function Compendium({
   const gmView = isGM && !preview;
   const dirty = (!!draft && JSON.stringify(draft) !== JSON.stringify(base ? asDraft(base) : firstDraft.current))
     || annotationBody !== (editingAnnotation?.body ?? '');
-  const busy = saving || noteSaving || leaving;
+  const busy = saving || noteSaving || leaving || moving;
   const state = useRef({ dirty, busy, selected });
   state.current = { dirty, busy, selected };
 
   const reload = useCallback(async () => {
     const generation = ++listGeneration.current;
     try {
-      const result = await api.listFiches();
+      const result = await (trash && gmView ? api.listDeletedFiches() : api.listFiches());
       if (generation === listGeneration.current && apiRef.current === api
           && !state.current.dirty && !state.current.busy) {
         setFiches(result);
@@ -106,7 +111,7 @@ export default function Compendium({
     } finally {
       if (generation === listGeneration.current && apiRef.current === api) setLoading(false);
     }
-  }, [api]);
+  }, [api, trash, gmView]);
 
   const loadNotes = useCallback(async (ficheId: string) => {
     const generation = ++noteGeneration.current;
@@ -142,18 +147,18 @@ export default function Compendium({
   useEffect(() => {
     setAnnotations([]);
     setNoteError('');
-    if (selected) void loadNotes(selected.id);
+    if (selected && !trash) void loadNotes(selected.id);
     else {
       ++noteGeneration.current;
       setNoteLoading(false);
     }
-  }, [selected?.id, loadNotes]);
+  }, [selected?.id, loadNotes, trash]);
 
   useEffect(() => {
     const refresh = () => {
       if (document.visibilityState === 'visible' && !state.current.dirty && !state.current.busy) {
         void reload();
-        if (state.current.selected) void loadNotes(state.current.selected.id);
+        if (state.current.selected && !trash) void loadNotes(state.current.selected.id);
       }
     };
     const timer = window.setInterval(refresh, 30_000);
@@ -162,7 +167,7 @@ export default function Compendium({
       window.clearInterval(timer);
       window.removeEventListener('focus', refresh);
     };
-  }, [reload, loadNotes]);
+  }, [reload, loadNotes, trash]);
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -298,6 +303,33 @@ export default function Compendium({
     }
   }
 
+  async function moveFiche(target: Fiche, restore = false) {
+    if (!gmView || busy || moveInFlight.current) return;
+    moveInFlight.current = true;
+    const generation = lifecycle.current;
+    const currentApi = api;
+    ++listGeneration.current;
+    ++noteGeneration.current;
+    setMoving(true); setLoading(false); setNoteLoading(false);
+    setDeleteError(''); setActionError('');
+    try {
+      if (restore) await currentApi.restoreFiche(target.id, target.version);
+      else await currentApi.deleteFiche(target.id, target.version);
+      if (!mounted.current || lifecycle.current !== generation || apiRef.current !== currentApi) return;
+      setFiches(previous => previous.filter(fiche => fiche.id !== target.id));
+      setId(null); resetNote(); closeEditor(); setDeleteTarget(null);
+      toast.success(restore ? 'La fiche est restaurée en brouillon.' : 'La fiche est placée dans la corbeille du MJ.');
+    } catch (cause) {
+      if (mounted.current && lifecycle.current === generation && apiRef.current === currentApi) {
+        const text = message(cause, 'Cette action a échoué. La fiche est conservée.');
+        if (restore) setActionError(text); else setDeleteError(text);
+      }
+    } finally {
+      moveInFlight.current = false;
+      if (mounted.current && lifecycle.current === generation && apiRef.current === currentApi) setMoving(false);
+    }
+  }
+
   const Icon = type === 'place' ? MapPin : Users;
 
   return <div className="notebook-shell">
@@ -316,14 +348,15 @@ export default function Compendium({
     </header>
     <main className="workspace">
       <div className="workspace-heading">
-        <div><div className="eyebrow">LIEUX & PERSONNAGES · {campaignName}</div><h1>Les fiches de votre aventure.</h1>
-          <p>{gmView ? 'Publiez ce que les personnages connaissent. Les joueurs ajoutent leurs notes.' : 'Retrouvez vos découvertes et annotez les fiches ensemble.'}</p>
+        <div><div className="eyebrow">LIEUX & PERSONNAGES · {campaignName}</div><h1>{trash ? 'La corbeille du MJ.' : 'Les fiches de votre aventure.'}</h1>
+          <p>{trash ? 'Restaurez une fiche supprimée : elle reviendra en brouillon avec ses annotations et son image.' : gmView ? 'Publiez ce que les personnages connaissent. Les joueurs ajoutent leurs notes.' : 'Retrouvez vos découvertes et annotez les fiches ensemble.'}</p>
         </div>
         <div className="fiche-top-actions">
           {isGM && <label className="preview-toggle"><Checkbox checked={preview} disabled={busy} onCheckedChange={value => guard(() => {
-            setPreview(value === true); closeEditor(); setId(null); resetNote();
+            setPreview(value === true); setTrash(false); closeEditor(); setId(null); resetNote(); setLoading(true);
           })} /><Eye size={16} />Vue joueurs</label>}
-          {gmView && <button className="primary" onClick={start} disabled={busy}><Plus size={18} />{type === 'place' ? 'Nouveau lieu' : 'Nouveau PNJ'}</button>}
+          {gmView && <button className="secondary" onClick={() => guard(() => {setTrash(!trash); setId(null); setQuery(''); closeEditor(); resetNote(); setLoading(true);})} disabled={busy}>{trash ? <ArrowLeft size={17}/> : <Trash2 size={17}/>} {trash ? 'Fiches actives' : 'Corbeille'}</button>}
+          {gmView && !trash && <button className="primary" onClick={start} disabled={busy}><Plus size={18} />{type === 'place' ? 'Nouveau lieu' : 'Nouveau PNJ'}</button>}
         </div>
       </div>
       <Tabs value={type} onValueChange={value => guard(() => {
@@ -338,7 +371,7 @@ export default function Compendium({
         <aside className="collection fiche-collection">
           <div className="collection-title"><span>{type === 'place' ? 'LES LIEUX CONNUS' : 'LES PERSONNAGES RENCONTRÉS'}</span>
             <button className="icon-button" aria-label="Actualiser les fiches" disabled={busy || dirty} onClick={() => {
-              void reload(); if (selected) void loadNotes(selected.id);
+              void reload(); if (selected && !trash) void loadNotes(selected.id);
             }}><RefreshCw size={16} /></button>
           </div>
           <label className="fiche-search"><Search size={17} /><span className="sr-only">Rechercher un lieu ou un personnage</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={type === 'place' ? 'Rechercher un lieu…' : 'Rechercher un personnage…'} /></label>
@@ -350,10 +383,10 @@ export default function Compendium({
               <span className="fiche-mini-icon"><Icon size={19} /></span>
               <span className="fiche-link-text"><span className="entry-title">{fiche.name}</span>
                 {fiche.subtitle && <span className="fiche-subtitle">{fiche.subtitle}</span>}
-                <span className="fiche-list-meta">{!fiche.published && <span className="draft-badge">Brouillon MJ</span>}<MessageSquare size={12} />{fiche.annotationCount} {fiche.annotationCount > 1 ? 'annotations' : 'annotation'}</span>
+                <span className="fiche-list-meta">{!fiche.published && <span className="draft-badge">{trash ? 'Dans la corbeille' : 'Brouillon MJ'}</span>}<MessageSquare size={12} />{fiche.annotationCount} {fiche.annotationCount > 1 ? 'annotations' : 'annotation'}</span>
               </span>
             </button>,
-          )}</div> : <p className="collection-hint">{search ? 'Aucune fiche ne correspond à cette recherche.' : gmView ? 'Ajoutez une fiche légère, puis rendez-la visible quand le groupe découvre ce lieu ou ce personnage.' : 'Les fiches publiées par le MJ apparaîtront ici.'}</p>}
+          )}</div> : <p className="collection-hint">{search ? 'Aucune fiche ne correspond à cette recherche.' : trash ? 'La corbeille est vide pour cette catégorie.' : gmView ? 'Ajoutez une fiche légère, puis rendez-la visible quand le groupe découvre ce lieu ou ce personnage.' : 'Les fiches publiées par le MJ apparaîtront ici.'}</p>}
         </aside>
         <div className="page-area">
           {actionError && <div className="notice error" role="alert">{actionError}</div>}
@@ -380,14 +413,14 @@ export default function Compendium({
             </form>
           </article> : selected ? <>
             <article className="journal-page fiche-reader">
-              <div className="page-topline"><span><Icon size={15} />{selected.type === 'place' ? 'LIEU' : 'PNJ'} · FICHE DU MJ</span><span className={selected.published ? 'published-badge' : 'draft-badge'}>{selected.published ? 'Partagée avec les joueurs' : 'Brouillon MJ'}</span></div>
+              <div className="page-topline"><span><Icon size={15} />{selected.type === 'place' ? 'LIEU' : 'PNJ'} · FICHE DU MJ</span><span className={selected.published ? 'published-badge' : 'draft-badge'}>{trash ? 'Dans la corbeille' : selected.published ? 'Partagée avec les joueurs' : 'Brouillon MJ'}</span></div>
               <div className="fiche-identity"><div className="fiche-large-icon"><Icon size={34} /></div><div>{selected.subtitle && <div className="fiche-role">{selected.subtitle}</div>}<h2>{selected.name}</h2>{selected.location && <div className="fiche-location"><MapPin size={15} />{selected.location}</div>}</div></div>
               <p className="fiche-summary">{selected.summary}</p>
-              {selected.imagePath && <FicheImage key={selected.imagePath} path={selected.imagePath} name={selected.name} load={api.loadImage}/>}
+              {selected.imagePath && !trash && <FicheImage key={selected.imagePath} path={selected.imagePath} name={selected.name} load={api.loadImage}/>}
               {selected.description && <div className="revealed"><h3>Ce que vous savez</h3><p>{selected.description}</p></div>}
-              <div className="fiche-official-footer"><span>Fiche mise à jour le {stamp(selected.updatedAt)}</span>{gmView && <button className="secondary" onClick={edit} disabled={busy}><Pencil size={15} />Modifier la fiche</button>}</div>
+              <div className="fiche-official-footer"><span>{trash ? 'Fiche supprimée le' : 'Fiche mise à jour le'} {stamp(selected.deletedAt || selected.updatedAt)}</span>{gmView && <div className="fiche-management">{trash ? <button className="secondary" disabled={busy} onClick={() => void moveFiche(selected, true)}><Undo2 size={15}/>{moving ? 'Restauration…' : 'Restaurer en brouillon'}</button> : <><button className="secondary" onClick={edit} disabled={busy}><Pencil size={15} />Modifier la fiche</button><button className="secondary danger" disabled={busy} onClick={() => guard(() => {setDeleteError(''); setDeleteTarget(selected);})}><Trash2 size={15}/>Supprimer</button></>}</div>}</div>
             </article>
-            <section className="annotations" aria-label="Annotations des joueurs">
+            {!trash && <section className="annotations" aria-label="Annotations des joueurs">
               <div className="annotations-heading"><div><span className="eyebrow">LA MÉMOIRE DU GROUPE</span><h2>Vos annotations <span>{annotations.length}</span></h2></div><MessageSquare size={22} /></div>
               <p className="annotation-help">Observations, souvenirs et théories du groupe, à côté de la fiche du MJ.</p>
               {noteLoading ? <p className="annotation-help" role="status">Chargement des annotations…</p> : annotations.length ? <div className="annotation-list">{annotations.map(note =>
@@ -403,15 +436,21 @@ export default function Compendium({
                 {noteError && <p className="save-error" role="alert">{noteError}</p>}
                 <div className="annotation-actions"><span>Visible par le groupe · signé {userName}</span><div>{editingAnnotation && <button type="button" className="secondary" onClick={() => guard(resetNote)} disabled={busy}>Annuler</button>}<button type="submit" className="primary" disabled={!annotationBody.trim() || busy}><MessageSquare size={16} />{noteSaving ? 'Enregistrement…' : editingAnnotation ? 'Enregistrer' : 'Ajouter ma note'}</button></div></div>
               </form>
-            </section>
+            </section>}
           </> : <article className="journal-page">
             <div className="page-topline"><span><Icon size={15} />{type === 'place' ? 'LES LIEUX DE LA CAMPAGNE' : 'LES VISAGES DE LA CAMPAGNE'}</span><span>FICHES PARTAGÉES</span></div>
-            <div className="empty-page"><span className="empty-symbol"><Icon size={30} /></span><div className="eyebrow">{gmView ? 'PRÉPARER UNE DÉCOUVERTE' : 'LES DÉCOUVERTES DU GROUPE'}</div><h2>{gmView ? (type === 'place' ? 'Le premier lieu à partager.' : 'Le premier visage à retenir.') : 'Les prochaines découvertes vous attendent.'}</h2><p>{gmView ? 'Un nom, une présentation courte et les informations révélées. Les joueurs pourront ensuite ajouter leurs annotations sur chaque fiche.' : 'Votre MJ publie ici les lieux et les personnages que vous connaissez. Chaque fiche dispose d’un espace pour vos annotations.'}</p>{gmView && <button className="primary" onClick={start} disabled={busy}><Plus size={17} />{type === 'place' ? 'Créer une fiche de lieu' : 'Créer une fiche de PNJ'}</button>}<div className="empty-prompts"><div><span>01</span>La fiche du MJ</div><div><span>02</span>Les informations connues</div><div><span>03</span>Les notes des joueurs</div></div></div>
+            <div className="empty-page"><span className="empty-symbol"><Icon size={30} /></span><div className="eyebrow">{trash ? 'CORBEILLE DU MJ' : gmView ? 'PRÉPARER UNE DÉCOUVERTE' : 'LES DÉCOUVERTES DU GROUPE'}</div><h2>{trash ? 'Aucune fiche supprimée.' : gmView ? (type === 'place' ? 'Le premier lieu à partager.' : 'Le premier visage à retenir.') : 'Les prochaines découvertes vous attendent.'}</h2><p>{trash ? 'Les fiches supprimées de cette catégorie apparaîtront ici. Vous pourrez les restaurer en brouillon.' : gmView ? 'Un nom, une présentation courte et les informations révélées. Les joueurs pourront ensuite ajouter leurs annotations sur chaque fiche.' : 'Votre MJ publie ici les lieux et les personnages que vous connaissez. Chaque fiche dispose d’un espace pour vos annotations.'}</p>{gmView && !trash && <button className="primary" onClick={start} disabled={busy}><Plus size={17} />{type === 'place' ? 'Créer une fiche de lieu' : 'Créer une fiche de PNJ'}</button>}{!trash && <div className="empty-prompts"><div><span>01</span>La fiche du MJ</div><div><span>02</span>Les informations connues</div><div><span>03</span>Les notes des joueurs</div></div>}</div>
           </article>}
         </div>
       </div>
       <footer className="workspace-footer"><span>Les fiches du MJ, les annotations du groupe.</span><span>Lieux · PNJ</span></footer>
     </main>
+    <AlertDialog open={!!deleteTarget} onOpenChange={open => {if (!open && !busy) {setDeleteTarget(null); setDeleteError('');}}}>
+      <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Supprimer « {deleteTarget?.name} » ?</AlertDialogTitle><AlertDialogDescription>Cette fiche quittera les fiches actives. Les joueurs n’auront plus accès à son texte, ses annotations ni son image. Vous pourrez la restaurer depuis la corbeille du MJ.</AlertDialogDescription></AlertDialogHeader>
+        {deleteError && <p className="save-error" role="alert">{deleteError}</p>}
+        <div className="dialog-actions"><AlertDialogCancel className="secondary" disabled={busy}>Annuler</AlertDialogCancel><AlertDialogAction className="primary danger" disabled={busy} onClick={event => {event.preventDefault(); if (deleteTarget) void moveFiche(deleteTarget);}}>{moving ? 'Suppression…' : 'Supprimer la fiche'}</AlertDialogAction></div>
+      </AlertDialogContent>
+    </AlertDialog>
     <AlertDialog open={discard} onOpenChange={open => { setDiscard(open); if (!open) pending.current = null; }}>
       <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Quitter sans enregistrer ?</AlertDialogTitle><AlertDialogDescription>Votre fiche ou votre annotation contient des modifications non enregistrées.</AlertDialogDescription></AlertDialogHeader><div className="dialog-actions"><AlertDialogCancel className="secondary">Continuer à écrire</AlertDialogCancel><AlertDialogAction className="primary" onClick={() => {
         const action = pending.current; pending.current = null; if (action) runAction(action);

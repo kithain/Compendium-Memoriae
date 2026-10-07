@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./vendor/shadcn-tailwind-4.13.0.css";
+.fiche-management{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.danger.secondary{border-color:#b47770;color:#91382f}
+.danger.primary{background:#a33f37;color:#fff}
+.danger.primary:hover{background:#872f29}
 .fiche-illustration{margin:20px auto 26px;width:min(100%,400px);aspect-ratio:4/3;border:1px solid #c9d1cf;border-radius:5px;overflow:hidden;background:#e3e9e6;display:grid;place-items:center}
 .fiche-illustration img{display:block;width:100%;height:100%;object-fit:contain}
 .fiche-illustration p{margin:0;padding:20px;text-align:center;font-size:.875rem;color:#526874}

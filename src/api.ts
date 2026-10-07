@@ -9,6 +9,9 @@ export type CampaignContext={campaignId:string;campaignName:string;isGM:boolean;
 export type CompendiumApi={
   loadImage(path:string):Promise<Blob>;
   listFiches():Promise<Fiche[]>;
+  listDeletedFiches():Promise<Fiche[]>;
+  deleteFiche(id:string,version:number):Promise<Fiche>;
+  restoreFiche(id:string,version:number):Promise<Fiche>;
   getFiche(id:string):Promise<{fiche:Fiche;annotations:Annotation[]}>;
   saveFiche(draft:FicheDraft,id?:string,version?:number):Promise<Fiche>;
   saveAnnotation(input:{ficheId:string;id?:string;body:string;version?:number}):Promise<Annotation[]>;
@@ -36,6 +39,9 @@ export function makeApi(context:CampaignContext):CompendiumApi{
   return {
     async loadImage(path){const {data,error}=await supabase.storage.from('compendium-images').download(path);if(error||!data)throw new Error('Illustration indisponible.');return data;},
     async listFiches(){return (await rpc<{fiches:Fiche[]}>('cm_list_fiches',{p_campaign})).fiches;},
+    async listDeletedFiches(){return (await rpc<{fiches:Fiche[]}>('cm_list_deleted_fiches',{p_campaign})).fiches;},
+    async deleteFiche(p_id,p_expected_version){return (await rpc<{fiche:Fiche}>('cm_delete_fiche',{p_campaign,p_id,p_expected_version})).fiche;},
+    async restoreFiche(p_id,p_expected_version){return (await rpc<{fiche:Fiche}>('cm_restore_fiche',{p_campaign,p_id,p_expected_version})).fiche;},
     getFiche(p_id){return rpc('cm_get_fiche',{p_campaign,p_id});},
     async saveFiche(p_fiche,p_id,p_expected_version){return (await rpc<{fiche:Fiche}>('cm_save_fiche',{p_campaign,p_id:p_id??null,p_expected_version:p_expected_version??null,p_fiche})).fiche;},
     async saveAnnotation({ficheId:p_fiche,id:p_id,body:p_body,version:p_expected_version}){return (await rpc<{annotations:Annotation[]}>('cm_save_annotation',{p_campaign,p_fiche,p_id:p_id??null,p_expected_version:p_expected_version??null,p_body})).annotations;},

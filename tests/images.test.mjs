@@ -8,10 +8,7 @@ test('Illustrations follow fiche permissions through Storage RLS',async t=>{
  try{
   await db.exec(await readFile(new URL('./fixtures/security.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/schema.sql',import.meta.url),'utf8'));
-  await db.exec(`create schema storage; grant usage on schema storage to anon,authenticated;
-   create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
-   create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
-   alter table storage.objects enable row level security;grant select on storage.objects to anon,authenticated;`);
+  await db.exec(await readFile(new URL('./fixtures/storage.sql',import.meta.url),'utf8'));
   await db.exec(await readFile(new URL('../supabase/images.sql',import.meta.url),'utf8'));
   await db.exec(`insert into compendium.fiches(campaign_id,type,name,summary,image_path,published) values
    ('10000000-0000-0000-0000-000000000001','place','Private','Synthetic','a/private.jpg',false),

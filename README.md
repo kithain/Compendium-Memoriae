@@ -6,7 +6,9 @@ Fiches de lieux et de PNJ partagées avec les joueurs, accompagnées d’annotat
 
 ## Utilisation
 
-Connectez-vous avec votre nom de joueur et votre mot de passe Dice-Forge, puis entrez le code d’un salon de votre campagne. Le compte est commun aux deux applications ; la connexion à Compendium est indépendante.
+Connectez-vous avec votre nom de joueur et votre mot de passe Dice-Forge : la campagne **Valombre** s’ouvre directement. Une session déjà ouverte donne également accès aux fiches sans étape supplémentaire. Le compte est commun aux deux applications ; la connexion à Compendium est indépendante.
+
+En cas d’erreur pendant l’ouverture, **Réessayer** relance le chargement. **Déconnexion** permet de changer de compte. Les droits restent vérifiés par le serveur pour chaque utilisateur.
 
 Le MJ voit les brouillons, crée et modifie les fiches, puis décide lesquelles publier. Les joueurs voient uniquement les fiches publiées et ajoutent leurs annotations. Chacun peut modifier ou supprimer ses propres annotations ; le texte officiel reste réservé au MJ. Les fiches et notes sont partagées entre les salons rattachés à la même campagne.
 
@@ -43,7 +45,7 @@ npm test
 npm run build
 ```
 
-Vite utilise le chemin `/Compendium-Memoriae/`, adapté au dépôt GitHub Pages. Les variables facultatives `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` permettent d’utiliser un autre environnement (voir `.env.example`).
+Vite utilise le chemin `/Compendium-Memoriae/`, adapté au dépôt GitHub Pages. Les variables facultatives `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` permettent d’utiliser un autre environnement (voir `.env.example`). `VITE_CAMPAIGN_ROOM` définit le salon utilisé automatiquement pour retrouver la campagne, avec `4SSU` par défaut. Ce code ne remplace pas les contrôles d’accès : les joueurs doivent déjà appartenir à un salon de la campagne dans Dice-Forge.
 
 Les tests PostgreSQL tournent localement avec PGlite et des campagnes fictives. Ils vérifient les accès, la séparation des campagnes, les brouillons, l’auteur des notes, les conflits de version, la suppression des annotations et l’import transactionnel. Les vérifications des petits écrans sont décrites dans [docs/verification-interface.md](docs/verification-interface.md).
 

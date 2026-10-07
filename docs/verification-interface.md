@@ -1,4 +1,4 @@
-# Vérification des annotations et des petits écrans
+# Vérification de l’interface
 
 Vérification du 7 octobre 2026 dans un navigateur Chromium, avec des dimensions de fenêtre simulées et des données fictives. Aucun message réel n’a été supprimé pour ces essais.
 
@@ -53,6 +53,24 @@ Comparaison avec les trois mêmes messages fictifs, dont un message long et un a
 Le titre passe à environ 25 px de hauteur et le formulaire à 124 px. Ces mesures portent sur la section entière défilante ; sa hauteur dépend toujours du contenu des messages.
 
 Les 28 combinaisons de formats, rôles et vues ont été revérifiées : texte et saisie à 16 px, boutons tactiles de 44 px jusqu’à 1024 px, auteurs longs sans débordement, page contenue dans la fenêtre et conservation des deux défilements. Les parcours d’ajout, d’édition et de suppression d’une note fictive, ainsi que la protection du brouillon lors d’un changement de vue, ont été vérifiés avec les nouveaux libellés.
+
+## Ouverture directe de la campagne
+
+La connexion ouvre Valombre directement, sans formulaire de salon ni bouton « Campagnes ». Le salon configuré `4SSU` est résolu par la RPC existante `cm_context`, qui conserve ses contrôles d’accès. Aucune migration n’est nécessaire. Le projet DiceForge contient d’autres campagnes vides ; seule Valombre contient des fiches Compendium. Cette ouverture vise explicitement la campagne configurée.
+
+Les essais suivants ont été réalisés avec les composants réels et des services fictifs, sans connexion à un compte réel ni requête de données de campagne :
+
+- Connexion depuis le formulaire, puis ouverture directe des fiches et déconnexion vers le formulaire.
+- Session déjà ouverte en espace joueur et en espace MJ.
+- Renouvellement de session sans rechargement de la campagne ni des listes.
+- Refus d’accès affiché sans formulaire de salon.
+- Erreur réseau suivie d’une nouvelle tentative réussie.
+- Déconnexion pendant le chargement : la réponse tardive n’affiche pas les fiches.
+- Changement de compte pendant le chargement : la réponse du compte précédent est ignorée.
+- Fin tardive d’une ancienne déconnexion : le nouveau compte reste ouvert.
+- Erreur de déconnexion : la fiche reste affichée et l’erreur est visible.
+
+Ces parcours ont été vérifiés à 390 × 844 ; l’ouverture directe a également été vérifiée dans une fenêtre de bureau. La compilation TypeScript et Vite passe. Les **14 tests de sécurité** de `tests/security.test.mjs` passent, notamment les sessions absentes, les identités falsifiées, les droits MJ/joueurs et la séparation des campagnes. Le contrôle en lecture seule du projet déployé confirme que `4SSU` correspond à Valombre et que `cm_context` est accessible à `authenticated`, pas à `anon`.
 
 ## Contrôle du schéma déployé
 

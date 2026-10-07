@@ -23,7 +23,7 @@ export type CompendiumProps = {
   isGM: boolean;
   campaignName: string;
   onSignOut: GuardedAction;
-  onLeaveCampaign: GuardedAction;
+  onLeaveCampaign?: GuardedAction;
   footerActions?: ReactNode;
   refreshRevision?: number;
 };
@@ -395,14 +395,17 @@ export default function Compendium({
   return <div className="notebook-shell">
     <Toaster richColors />
     <header className="topbar">
-      <button className="brand" onClick={() => guard(onLeaveCampaign)} disabled={busy} aria-label="Compendium Memoriae, choisir une campagne">
+      {onLeaveCampaign ? <button className="brand" onClick={() => guard(onLeaveCampaign)} disabled={busy} aria-label="Compendium Memoriae, choisir une campagne">
         <span className="brand-mark"><BookOpen size={24} /></span>
         <span>COMPENDIUM<span className="brand-sub">MEMORIAE</span></span>
-      </button>
+      </button> : <div className="brand">
+        <span className="brand-mark"><BookOpen size={24} /></span>
+        <span>COMPENDIUM<span className="brand-sub">MEMORIAE</span></span>
+      </div>}
       <div className="campaign-identity"><span>{campaignName}</span><small>{isGM ? 'Espace MJ' : 'Espace joueurs'}</small></div>
       <div className="user"><span className="avatar">{userName.charAt(0).toUpperCase()}</span><span className="user-name">{userName}</span></div>
       <nav className="account-actions" aria-label="Compte et campagne">
-        <button className="header-action" onClick={() => guard(onLeaveCampaign)} disabled={busy}><ArrowLeft size={16} /><span>Campagnes</span></button>
+        {onLeaveCampaign && <button className="header-action" onClick={() => guard(onLeaveCampaign)} disabled={busy}><ArrowLeft size={16} /><span>Campagnes</span></button>}
         <button className="header-action" onClick={() => guard(onSignOut)} disabled={busy}><LogOut size={16} /><span>Déconnexion</span></button>
       </nav>
     </header>

@@ -15,6 +15,7 @@ export type CompendiumApi={
   getFiche(id:string):Promise<{fiche:Fiche;annotations:Annotation[]}>;
   saveFiche(draft:FicheDraft,id?:string,version?:number):Promise<Fiche>;
   saveAnnotation(input:{ficheId:string;id?:string;body:string;version?:number}):Promise<Annotation[]>;
+  deleteAnnotation(input:{ficheId:string;id:string;version:number}):Promise<Annotation[]>;
 };
 export function playerEmail(name:string){
   const value=name.trim();
@@ -45,6 +46,7 @@ export function makeApi(context:CampaignContext):CompendiumApi{
     getFiche(p_id){return rpc('cm_get_fiche',{p_campaign,p_id});},
     async saveFiche(p_fiche,p_id,p_expected_version){return (await rpc<{fiche:Fiche}>('cm_save_fiche',{p_campaign,p_id:p_id??null,p_expected_version:p_expected_version??null,p_fiche})).fiche;},
     async saveAnnotation({ficheId:p_fiche,id:p_id,body:p_body,version:p_expected_version}){return (await rpc<{annotations:Annotation[]}>('cm_save_annotation',{p_campaign,p_fiche,p_id:p_id??null,p_expected_version:p_expected_version??null,p_body})).annotations;},
+    async deleteAnnotation({ficheId:p_fiche,id:p_id,version:p_expected_version}){return (await rpc<{annotations:Annotation[]}>('cm_delete_annotation',{p_campaign,p_fiche,p_id,p_expected_version})).annotations;},
   };
 }
 export async function importFiches(context:CampaignContext,input:unknown){

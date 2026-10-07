@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  ArrowLeft, BookOpen, Eye, LogOut, MapPin, MessageSquare,
+  ArrowLeft, BookOpen, ChevronDown, ChevronUp, Eye, LogOut, MapPin, MessageSquare,
   Pencil, Plus, RefreshCw, Save, Search, Trash2, Undo2, Users,
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
@@ -51,6 +51,7 @@ export default function Compendium({
   const [fiches, setFiches] = useState<Fiche[]>([]);
   const [id, setId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [listCollapsed, setListCollapsed] = useState(true);
   const [preview, setPreview] = useState(false);
   const [trash, setTrash] = useState(false);
   const [moving, setMoving] = useState(false);
@@ -62,6 +63,12 @@ export default function Compendium({
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationBody, setAnnotationBody] = useState('');
   const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
+  const [noteDeleteTarget, setNoteDeleteTarget] = useState<Annotation | null>(null);
+  const [noteDeleteError, setNoteDeleteError] = useState('');
+  const [noteDeleting, setNoteDeleting] = useState(false);
+  const noteDeleteInFlight = useRef(false);
+  const noteDeleteTrigger = useRef<HTMLButtonElement | null>(null);
+  const noteDeleteConfirm = useRef<HTMLButtonElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [noteLoading, setNoteLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -96,7 +103,7 @@ export default function Compendium({
   const gmView = isGM && !preview;
   const dirty = (!!draft && JSON.stringify(draft) !== JSON.stringify(base ? asDraft(base) : firstDraft.current))
     || annotationBody !== (editingAnnotation?.body ?? '');
-  const busy = saving || noteSaving || leaving || moving;
+  const busy = saving || noteSaving || noteDeleting || leaving || moving;
   const state = useRef({ dirty, busy, selected });
   state.current = { dirty, busy, selected };
 
@@ -152,6 +159,25 @@ export default function Compendium({
   // A new selection starts at the top of its fiche without moving the list.
   useEffect(() => { if (pageArea.current) pageArea.current.scrollTop = 0; }, [selected?.id, type, trash, !!draft]);
   useEffect(() => { if (ficheList.current) ficheList.current.scrollTop = 0; }, [type, trash]);
+  useEffect(() => {
+    const list = ficheList.current;
+    if (listCollapsed && list?.contains(document.activeElement)
+        && getComputedStyle(list).display === 'none') {
+      pageArea.current?.focus({ preventScroll: true });
+    }
+  }, [listCollapsed, selected?.id]);
+  useEffect(() => {
+    if (listCollapsed) return;
+    const list = ficheList.current;
+    const active = list?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!list || !active) return;
+    const listBox = list.getBoundingClientRect(), activeBox = active.getBoundingClientRect();
+    if (activeBox.top < listBox.top) list.scrollTop += activeBox.top - listBox.top;
+    else if (activeBox.bottom > listBox.bottom) list.scrollTop += activeBox.bottom - listBox.bottom;
+  }, [listCollapsed]);
+  useEffect(() => {
+    if (noteDeleteError && !noteDeleting) noteDeleteConfirm.current?.focus({ preventScroll: true });
+  }, [noteDeleteError, noteDeleting]);
 
   useEffect(() => {
     setAnnotations([]);
@@ -304,6 +330,35 @@ export default function Compendium({
     }
   }
 
+  async function deleteNote() {
+    const target = noteDeleteTarget;
+    if (!target || !selected || target.ficheId !== selected.id || !target.canDelete
+        || target.deletedAt || busy || noteDeleteInFlight.current) return;
+    noteDeleteInFlight.current = true;
+    const generation = lifecycle.current;
+    const currentApi = api;
+    ++noteGeneration.current;
+    ++listGeneration.current;
+    setLoading(false); setNoteLoading(false); setNoteDeleting(true); setNoteDeleteError('');
+    try {
+      const result = await currentApi.deleteAnnotation({ficheId: target.ficheId, id: target.id, version: target.version});
+      if (!mounted.current || lifecycle.current !== generation || apiRef.current !== currentApi) return;
+      setAnnotations(result);
+      setFiches(previous => previous.map(fiche => fiche.id === target.ficheId
+        ? {...fiche, annotationCount: result.length} : fiche));
+      if (editingAnnotation?.id === target.id) resetNote();
+      setNoteDeleteTarget(null);
+      toast.success('Votre message a été supprimé.');
+    } catch (cause) {
+      if (mounted.current && lifecycle.current === generation && apiRef.current === currentApi) {
+        setNoteDeleteError(message(cause, 'Suppression impossible. Votre message est conservé.'));
+      }
+    } finally {
+      noteDeleteInFlight.current = false;
+      if (mounted.current && lifecycle.current === generation && apiRef.current === currentApi) setNoteDeleting(false);
+    }
+  }
+
   async function moveFiche(target: Fiche, restore = false) {
     if (!gmView || busy || moveInFlight.current) return;
     moveInFlight.current = true;
@@ -357,7 +412,7 @@ export default function Compendium({
             setPreview(value === true); setTrash(false); closeEditor(); setId(null); resetNote(); setLoading(true);
           })} /><Eye size={16} />Vue joueurs</label>}
           {gmView && <button className="secondary" onClick={() => guard(() => {setTrash(!trash); setId(null); setQuery(''); closeEditor(); resetNote(); setLoading(true);})} disabled={busy}>{trash ? <ArrowLeft size={17}/> : <Trash2 size={17}/>} {trash ? 'Fiches actives' : 'Corbeille'}</button>}
-          {gmView && !trash && <button className="primary" onClick={start} disabled={busy}><Plus size={18} />{type === 'place' ? 'Nouveau lieu' : 'Nouveau PNJ'}</button>}
+          {gmView && !trash && <button className="primary" onClick={start} disabled={busy} aria-label={type === 'place' ? 'Créer une fiche de lieu' : 'Créer une fiche de PNJ'}><Plus size={18} /><span className="desktop-action-label">{type === 'place' ? 'Nouveau lieu' : 'Nouveau PNJ'}</span><span className="mobile-action-label">Nouveau</span></button>}
         </div>
       </div>
       <Tabs value={type} onValueChange={value => guard(() => {
@@ -368,8 +423,9 @@ export default function Compendium({
           <TabsTrigger value="npc" className="section-tab" disabled={busy}><Users size={18} />PNJ<span className="tab-count">{fiches.filter(fiche => fiche.type === 'npc' && (!playerView || fiche.published)).length}</span></TabsTrigger>
         </TabsList>
       </Tabs>
-      <div className="fiche-grid">
+      <div className={`fiche-grid${listCollapsed ? ' mobile-list-collapsed' : ''}`}>
         <aside className="collection fiche-collection">
+          <button type="button" className="mobile-list-toggle" aria-expanded={!listCollapsed} aria-controls="compendium-fiche-list" onClick={() => setListCollapsed(value => !value)}><Icon size={16}/><span>{listCollapsed ? 'Choisir une fiche' : 'Réduire la liste'}</span>{listCollapsed ? <ChevronDown size={17}/> : <ChevronUp size={17}/>}</button>
           <div className="collection-controls">
           <div className="collection-title"><span>{type === 'place' ? 'LES LIEUX CONNUS' : 'LES PERSONNAGES RENCONTRÉS'}</span>
             <button className="icon-button" aria-label="Actualiser les fiches" disabled={busy || dirty} onClick={() => {
@@ -379,9 +435,9 @@ export default function Compendium({
           <label className="fiche-search"><Search size={17} /><span className="sr-only">Rechercher un lieu ou un personnage</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={type === 'place' ? 'Rechercher un lieu…' : 'Rechercher un personnage…'} /></label>
           {search && <p className="search-count" role="status">{rows.length} sur {collection.length} {type === 'place' ? 'lieux' : 'personnages'}</p>}
           </div>
-          {loading ? <p className="collection-hint" role="status">Ouverture des fiches…</p> : rows.length ? <nav className="fiche-list" ref={ficheList} aria-label={type === 'place' ? 'Liste des lieux' : 'Liste des PNJ'} tabIndex={0}>{rows.map(fiche =>
+          {loading ? <p className="collection-hint" role="status">Ouverture des fiches…</p> : rows.length ? <nav id="compendium-fiche-list" className="fiche-list" ref={ficheList} aria-label={type === 'place' ? 'Liste des lieux' : 'Liste des PNJ'} tabIndex={0}>{rows.map(fiche =>
             <button key={fiche.id} className={`fiche-link ${selected?.id === fiche.id && !draft ? 'active' : ''}`} aria-current={selected?.id === fiche.id && !draft ? 'true' : undefined} disabled={busy} onClick={() => guard(() => {
-              setId(fiche.id); closeEditor(); resetNote();
+              setId(fiche.id); setListCollapsed(true); closeEditor(); resetNote();
             })}>
               <span className="fiche-mini-icon"><Icon size={19} /></span>
               <span className="fiche-link-text"><span className="entry-title">{fiche.name}</span>
@@ -427,9 +483,9 @@ export default function Compendium({
               <div className="annotations-heading"><div><span className="eyebrow">LA MÉMOIRE DU GROUPE</span><h2>Vos annotations <span>{annotations.length}</span></h2></div><MessageSquare size={22} /></div>
               <p className="annotation-help">Observations, souvenirs et théories du groupe, à côté de la fiche du MJ.</p>
               {noteLoading ? <p className="annotation-help" role="status">Chargement des annotations…</p> : annotations.length ? <div className="annotation-list">{annotations.map(note =>
-                <article key={note.id} className="annotation"><header><span className="avatar">{note.author.charAt(0).toUpperCase()}</span><div><strong>{note.author}</strong><time dateTime={note.updatedAt}>{stamp(note.updatedAt)}{note.updatedAt !== note.createdAt ? ' · modifiée' : ''}</time></div>{note.canEdit && <button className="icon-button" aria-label={`Modifier votre annotation du ${stamp(note.updatedAt)}`} onClick={() => guard(() => {
+                <article key={note.id} className={`annotation${note.deletedAt ? ' annotation-deleted' : ''}`}><header><span className="avatar">{note.author.charAt(0).toUpperCase()}</span><div className="annotation-author"><strong>{note.author}</strong><time dateTime={note.deletedAt || note.updatedAt}>{stamp(note.deletedAt || note.updatedAt)}{note.deletedAt ? ' · supprimé' : note.updatedAt !== note.createdAt ? ' · modifiée' : ''}</time></div><div className="annotation-tools">{note.canEdit && !note.deletedAt && <button className="icon-button" aria-label={`Modifier votre annotation du ${stamp(note.updatedAt)}`} onClick={() => guard(() => {
                   noteFicheId.current = note.ficheId; setEditingAnnotation(note); setAnnotationBody(note.body); setNoteError('');
-                })} disabled={busy}><Pencil size={15} /></button>}</header><p>{note.body}</p></article>,
+                })} disabled={busy}><Pencil size={15} /></button>}{note.canDelete && !note.deletedAt && <button className="icon-button danger" aria-label={`Supprimer votre annotation du ${stamp(note.updatedAt)}`} disabled={busy} onClick={event => {noteDeleteTrigger.current = event.currentTarget; setNoteDeleteError(''); setNoteDeleteTarget(note);}}><Trash2 size={15}/></button>}</div></header><p>{note.deletedAt ? 'Message supprimé par l’utilisateur.' : note.body}</p></article>,
               )}</div> : <p className="annotation-empty">Aucune annotation pour le moment.</p>}
               <form className="annotation-form" onSubmit={event => { event.preventDefault(); void saveNote(); }}>
                 <label htmlFor="annotation-body">{editingAnnotation ? 'Modifier votre annotation' : 'Ajouter une annotation'}</label>
@@ -452,6 +508,18 @@ export default function Compendium({
       <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Supprimer « {deleteTarget?.name} » ?</AlertDialogTitle><AlertDialogDescription>Cette fiche quittera les fiches actives. Les joueurs n’auront plus accès à son texte, ses annotations ni son image. Vous pourrez la restaurer depuis la corbeille du MJ.</AlertDialogDescription></AlertDialogHeader>
         {deleteError && <p className="save-error" role="alert">{deleteError}</p>}
         <div className="dialog-actions"><AlertDialogCancel className="secondary" disabled={busy}>Annuler</AlertDialogCancel><AlertDialogAction className="primary danger" disabled={busy} onClick={event => {event.preventDefault(); if (deleteTarget) void moveFiche(deleteTarget);}}>{moving ? 'Suppression…' : 'Supprimer la fiche'}</AlertDialogAction></div>
+      </AlertDialogContent>
+    </AlertDialog>
+    <AlertDialog open={!!noteDeleteTarget} onOpenChange={open => {if (!open && !busy) {setNoteDeleteTarget(null); setNoteDeleteError('');}}}>
+      <AlertDialogContent onCloseAutoFocus={event => {
+        event.preventDefault();
+        const trigger = noteDeleteTrigger.current;
+        (trigger?.isConnected ? trigger : pageArea.current)?.focus({ preventScroll: true });
+      }}><AlertDialogHeader><AlertDialogTitle>Supprimer votre message ?</AlertDialogTitle><AlertDialogDescription>Le texte sera effacé. Votre nom, la date et la mention « Message supprimé par l’utilisateur » resteront visibles.</AlertDialogDescription></AlertDialogHeader>
+        {noteDeleteTarget && <p className="annotation-delete-preview">{noteDeleteTarget.body.length > 200 ? `${noteDeleteTarget.body.slice(0, 200)}…` : noteDeleteTarget.body}</p>}
+        {noteDeleteTarget && editingAnnotation?.id === noteDeleteTarget.id && dirty && <p className="annotation-delete-warning">Les modifications en cours de ce message seront aussi abandonnées.</p>}
+        {noteDeleteError && <p className="save-error" role="alert">{noteDeleteError}</p>}
+        <div className="dialog-actions"><AlertDialogCancel className="secondary" disabled={busy}>Conserver le message</AlertDialogCancel><AlertDialogAction ref={noteDeleteConfirm} className="primary danger" disabled={busy} onClick={event => {event.preventDefault(); void deleteNote();}}>{noteDeleting ? 'Suppression…' : 'Supprimer mon message'}</AlertDialogAction></div>
       </AlertDialogContent>
     </AlertDialog>
     <AlertDialog open={discard} onOpenChange={open => { setDiscard(open); if (!open) pending.current = null; }}>

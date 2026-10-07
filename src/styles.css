@@ -361,6 +361,21 @@
 .fiche-list:focus-visible, .page-area:focus-visible { outline: 2px solid #d0a063; outline-offset: -2px; }
 .workspace-footer { flex-shrink: 0; align-items: center; margin-top: 12px; }
 .workspace-footer-actions { display: flex; align-items: center; gap: 18px; }
+.annotation header > .avatar { flex-shrink: 0; }
+.annotation-author { min-width: 0; flex: 1; }
+.annotation-author time { overflow-wrap: anywhere; }
+.annotation-tools { display: flex; gap: 4px; flex-shrink: 0; }
+.annotation header .annotation-tools .icon-button { margin-left: 0; }
+.annotation-deleted { border-left-color: #627985; background: #1b3340; }
+.annotation-deleted > p { color: #b0c1c9; font-style: italic; }
+.annotation-delete-preview { padding: 12px; border-left: 2px solid #6f949b; background: #203c49; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 150px; overflow: auto; }
+.annotation-delete-warning { color: #ecd7b9; font-size: .875rem; }
+.mobile-action-label { display: none; }
+.mobile-list-toggle { display: none; }
+/* Keep Radix's invisible form inputs inside their checkbox labels. */
+.publish-choice, .preview-toggle { position: relative; }
+[data-slot=alert-dialog-content] { max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; }
+[data-slot=alert-dialog-title], [data-slot=alert-dialog-description] { overflow-wrap: anywhere; }
 .import-trigger { background: transparent; color: #dec29d; border: 1px solid #526570; border-radius: 4px; padding: 7px 10px; font-size: .75rem; }
 .import-trigger:hover { background: #203a46; }
 .import-backdrop { position: fixed; inset: 0; z-index: 50; background: #050d15b3; }
@@ -395,9 +410,13 @@
   .fiche-top-actions .primary, .fiche-top-actions .secondary { min-height: 36px; padding: 8px 10px; font-size: .8125rem; }
   .preview-toggle { font-size: .8125rem; gap: 6px; }
   .preview-toggle > svg { display: none; }
+  .annotation-tools .icon-button, .header-action, .collection-title .icon-button { min-width: 44px; min-height: 44px; }
+  .annotation-tools { gap: 2px; }
+  .annotation header { gap: 8px; }
+  .fiche-search input, .fiche-fields input, .fiche-editor textarea { font-size: 1rem; }
   .section-tab { min-height: 45px; }
   .fiche-grid { grid-template-rows: minmax(0, 36%) minmax(0, 1fr); gap: 12px; padding-top: 12px; }
-  .collection-controls { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 8px; align-items: center; }
+  .collection-controls { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 8px; align-items: center; }
   .collection-title { grid-column: 2; grid-row: 1; padding: 0; border: 0; }
   .collection-title > span { display: none; }
   .fiche-search { grid-column: 1; grid-row: 1; margin: 0; padding: 7px 10px; }
@@ -425,7 +444,7 @@
   .fiche-list { margin-top: 8px; }
   .workspace-footer { margin-top: 8px; }
 }
-@media (max-width: 760px) and (max-height: 500px) {
+@media (min-width: 560px) and (max-width: 760px) and (max-height: 500px) {
   .notebook-shell > .topbar { flex-wrap: nowrap; gap: 8px; }
   .campaign-identity { order: initial; width: auto; max-width: 160px; display: block; margin-left: auto; padding-top: 0; }
   .campaign-identity > small { display: block; }
@@ -433,4 +452,50 @@
   .workspace-heading h1 { font-size: 1.2rem; }
   .fiche-top-actions { width: auto; margin-left: auto; }
   .fiche-grid { grid-template-columns: minmax(120px, 32%) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+}
+@media (max-width: 1024px) {
+  .annotation-tools .icon-button, .header-action, .collection-title .icon-button { min-width: 44px; min-height: 44px; }
+  .fiche-search input, .fiche-fields input, .fiche-editor textarea { font-size: 1rem; }
+  .collection-controls { grid-template-columns: minmax(0, 1fr) 44px; }
+}
+@media (max-width: 760px) {
+  .notebook-shell > .topbar { gap: 6px; padding: 8px 4%; }
+  .topbar .brand { gap: 8px; font-size: .6875rem; letter-spacing: .1em; }
+  .topbar .brand-mark { width: 30px; height: 36px; }
+  .topbar .brand-mark > svg { width: 20px; height: 20px; }
+  .topbar .brand-sub { font-size: .625rem; }
+  .topbar .user > .avatar { width: 28px; height: 28px; font-size: .75rem; }
+  .campaign-identity { padding-top: 0; }
+  .workspace-heading { gap: 8px; margin-bottom: 8px; }
+  .workspace-heading .eyebrow, .workspace-heading p { display: none; }
+  .workspace-heading h1 { margin: 0; font-size: 1.25rem; line-height: 1.3; }
+  .fiche-top-actions { gap: 6px; flex-wrap: nowrap; justify-content: flex-start; }
+  .fiche-top-actions .primary, .fiche-top-actions .secondary { min-height: 44px; gap: 6px; padding: 8px; font-size: .75rem; white-space: nowrap; }
+  .preview-toggle { font-size: .75rem; gap: 6px; min-height: 44px; }
+  .desktop-action-label { display: none; }
+  .mobile-action-label { display: inline; }
+  .fiche-grid { grid-template-rows: minmax(0, min(264px, 65%)) minmax(0, 1fr); }
+  .fiche-link .fiche-subtitle { display: none; }
+  .mobile-list-toggle { display: flex; flex-shrink: 0; align-items: center; gap: 8px; width: 100%; min-height: 44px; padding: 8px 10px; margin-bottom: 8px; color: #ecd7b9; background: #203a46; border: 1px solid #526570; border-radius: 4px; font-size: .875rem; }
+  .mobile-list-toggle > span { flex: 1; text-align: left; }
+  .mobile-list-collapsed { grid-template-rows: 44px minmax(0, 1fr); }
+  .mobile-list-collapsed .mobile-list-toggle { margin-bottom: 0; }
+  .mobile-list-collapsed .collection-controls, .mobile-list-collapsed .fiche-list, .mobile-list-collapsed .collection-hint { display: none; }
+  .collection-controls { grid-template-columns: minmax(0, 1fr) 44px; }
+  .import-trigger, .dialog-actions > button, .annotation-actions button { min-height: 44px; }
+  .editor-actions { flex-direction: column; align-items: stretch; }
+  .editor-actions .primary { flex: none; }
+  .import-dialog-heading .icon-button { min-width: 44px; min-height: 44px; }
+}
+@media (min-width: 560px) and (max-width: 760px) and (max-height: 500px) {
+  .workspace-heading h1 { font-size: 1.1rem; }
+  .fiche-top-actions .primary, .fiche-top-actions .secondary, .preview-toggle { min-height: 44px; }
+  .fiche-grid { grid-template-rows: minmax(0, 1fr); }
+  .mobile-list-toggle { display: none; }
+  .mobile-list-collapsed .collection-controls { display: grid; }
+  .mobile-list-collapsed .fiche-list { display: flex; }
+  .mobile-list-collapsed .collection-hint { display: block; }
+}
+@media (max-width: 560px) and (max-height: 600px) {
+  .workspace-heading h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }

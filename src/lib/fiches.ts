@@ -1,7 +1,7 @@
 export const ficheTypes=['place','npc'] as const;
 export type FicheType=typeof ficheTypes[number];
 export type FicheDraft={type:FicheType;name:string;subtitle:string;location:string;summary:string;description:string;published:boolean};
-export type Fiche=FicheDraft & {id:string;updatedAt:string;version:number;annotationCount:number};
+export type Fiche=FicheDraft & {id:string;updatedAt:string;version:number;annotationCount:number;imagePath?:string|null};
 export type Annotation={id:string;ficheId:string;body:string;author:string;createdAt:string;updatedAt:string;version:number;canEdit:boolean};
 export function emptyFiche(type:FicheType):FicheDraft{return {type,name:'',subtitle:'',location:'',summary:'',description:'',published:false};}
 export function validateFiche(input:unknown):FicheDraft|null{

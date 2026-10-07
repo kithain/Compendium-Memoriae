@@ -7,6 +7,7 @@ import { Toaster, toast } from 'sonner';
 import type { CompendiumApi } from './api';
 import type { Annotation, Fiche, FicheDraft, FicheType } from './lib/fiches';
 import { emptyFiche } from './lib/fiches';
+import FicheImage from './components/FicheImage';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Checkbox } from './components/ui/checkbox';
 import {
@@ -382,6 +383,7 @@ export default function Compendium({
               <div className="page-topline"><span><Icon size={15} />{selected.type === 'place' ? 'LIEU' : 'PNJ'} · FICHE DU MJ</span><span className={selected.published ? 'published-badge' : 'draft-badge'}>{selected.published ? 'Partagée avec les joueurs' : 'Brouillon MJ'}</span></div>
               <div className="fiche-identity"><div className="fiche-large-icon"><Icon size={34} /></div><div>{selected.subtitle && <div className="fiche-role">{selected.subtitle}</div>}<h2>{selected.name}</h2>{selected.location && <div className="fiche-location"><MapPin size={15} />{selected.location}</div>}</div></div>
               <p className="fiche-summary">{selected.summary}</p>
+              {selected.imagePath && <FicheImage key={selected.imagePath} path={selected.imagePath} name={selected.name} load={api.loadImage}/>}
               {selected.description && <div className="revealed"><h3>Ce que vous savez</h3><p>{selected.description}</p></div>}
               <div className="fiche-official-footer"><span>Fiche mise à jour le {stamp(selected.updatedAt)}</span>{gmView && <button className="secondary" onClick={edit} disabled={busy}><Pencil size={15} />Modifier la fiche</button>}</div>
             </article>

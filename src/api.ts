@@ -7,6 +7,7 @@ export const supabase=createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{
 });
 export type CampaignContext={campaignId:string;campaignName:string;isGM:boolean;userName:string};
 export type CompendiumApi={
+  loadImage(path:string):Promise<Blob>;
   listFiches():Promise<Fiche[]>;
   getFiche(id:string):Promise<{fiche:Fiche;annotations:Annotation[]}>;
   saveFiche(draft:FicheDraft,id?:string,version?:number):Promise<Fiche>;
@@ -33,6 +34,7 @@ export function loadContext(room:string){return rpc<CampaignContext>('cm_context
 export function makeApi(context:CampaignContext):CompendiumApi{
   const p_campaign=context.campaignId;
   return {
+    async loadImage(path){const {data,error}=await supabase.storage.from('compendium-images').download(path);if(error||!data)throw new Error('Illustration indisponible.');return data;},
     async listFiches(){return (await rpc<{fiches:Fiche[]}>('cm_list_fiches',{p_campaign})).fiches;},
     getFiche(p_id){return rpc('cm_get_fiche',{p_campaign,p_id});},
     async saveFiche(p_fiche,p_id,p_expected_version){return (await rpc<{fiche:Fiche}>('cm_save_fiche',{p_campaign,p_id:p_id??null,p_expected_version:p_expected_version??null,p_fiche})).fiche;},

@@ -306,3 +306,131 @@
   .auth-card > .secondary { width: 100%; }
   .import-panel { padding: 15px 18px; }
 }
+
+/* Both consultation panes stay inside the available viewport. */
+.notebook-shell {
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.notebook-shell > .topbar { flex-shrink: 0; }
+.notebook-shell > .workspace {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: 24px;
+}
+.workspace-heading { flex-shrink: 0; margin-bottom: 18px; }
+.workspace-heading > div:first-child { min-width: 0; }
+.workspace-heading .eyebrow { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workspace > [data-slot=tabs] { flex-shrink: 0; }
+.fiche-grid {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  overflow: hidden;
+  padding-top: 20px;
+}
+.fiche-collection { min-height: 0; max-height: none; overflow: hidden; }
+.collection-controls { flex-shrink: 0; }
+.fiche-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding: 8px;
+  padding: 3px 3px 8px;
+}
+.fiche-link { flex-shrink: 0; }
+.page-area {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scroll-padding: 8px;
+  padding: 3px 3px 8px;
+}
+.fiche-list:focus-visible, .page-area:focus-visible { outline: 2px solid #d0a063; outline-offset: -2px; }
+.workspace-footer { flex-shrink: 0; align-items: center; margin-top: 12px; }
+.workspace-footer-actions { display: flex; align-items: center; gap: 18px; }
+.import-trigger { background: transparent; color: #dec29d; border: 1px solid #526570; border-radius: 4px; padding: 7px 10px; font-size: .75rem; }
+.import-trigger:hover { background: #203a46; }
+.import-backdrop { position: fixed; inset: 0; z-index: 50; background: #050d15b3; }
+.import-dialog {
+  position: fixed;
+  z-index: 51;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(600px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  background: #142c38;
+  color: #c1d2dc;
+  border: 1px solid #526570;
+  border-radius: 6px;
+}
+.import-dialog-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.import-dialog-heading h2 { margin: 0; font-size: 1.6rem; }
+.import-dialog p { margin: 16px 0; font-size: .875rem; line-height: 1.8; }
+.import-dialog input { max-width: 100%; font-size: .875rem; }
+.import-dialog input::file-selector-button { padding: 9px 12px; margin-right: 12px; color: #e1eaee; background: #244551; border: 1px solid #627b86; border-radius: 4px; cursor: pointer; }
+.import-dialog p[role=status] { border-left: 2px solid #c6a476; padding: 12px 14px; background: #203b48; color: #ecd7b9; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .notebook-shell > .workspace { padding: 14px 4% 12px; }
+  .workspace-heading { gap: 12px; margin-bottom: 12px; }
+  .workspace-heading h1 { font-size: 1.6rem; }
+  .workspace-heading p { font-size: .8125rem; }
+  .fiche-top-actions { gap: 8px; justify-content: flex-start; }
+  .fiche-top-actions .primary, .fiche-top-actions .secondary { min-height: 36px; padding: 8px 10px; font-size: .8125rem; }
+  .preview-toggle { font-size: .8125rem; gap: 6px; }
+  .preview-toggle > svg { display: none; }
+  .section-tab { min-height: 45px; }
+  .fiche-grid { grid-template-rows: minmax(0, 36%) minmax(0, 1fr); gap: 12px; padding-top: 12px; }
+  .collection-controls { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 8px; align-items: center; }
+  .collection-title { grid-column: 2; grid-row: 1; padding: 0; border: 0; }
+  .collection-title > span { display: none; }
+  .fiche-search { grid-column: 1; grid-row: 1; margin: 0; padding: 7px 10px; }
+  .search-count { grid-column: 1 / -1; margin: 0; }
+  .fiche-list { flex-direction: column; margin-top: 8px; }
+  .fiche-link { min-width: 0; max-width: none; padding: 8px 12px; }
+  .fiche-list-meta { margin-top: 6px; }
+  .workspace-footer { margin-top: 8px; justify-content: flex-end; }
+  .workspace-footer > span:first-child, .workspace-footer-actions > span { display: none; }
+}
+@media (max-height: 600px) {
+  .notebook-shell > .topbar { min-height: 58px; padding-top: 8px; padding-bottom: 8px; }
+  .notebook-shell > .workspace { padding-top: 10px; padding-bottom: 10px; }
+  .workspace-heading { margin-bottom: 10px; gap: 8px; }
+  .workspace-heading h1 { font-size: 1.4rem; margin: 0; }
+  .workspace-heading p, .workspace-heading .eyebrow { display: none; }
+  .fiche-top-actions .primary, .fiche-top-actions .secondary { min-height: 34px; padding: 7px 10px; font-size: .75rem; }
+  .section-tab { min-height: 40px; padding-top: 8px!important; padding-bottom: 8px!important; }
+  .fiche-grid { padding-top: 12px; }
+  .collection-controls { display: grid; grid-template-columns: minmax(0, 1fr) 32px; gap: 8px; align-items: center; }
+  .collection-title { grid-column: 2; grid-row: 1; padding: 0; border: 0; }
+  .collection-title > span { display: none; }
+  .fiche-search { grid-column: 1; grid-row: 1; margin: 0; padding: 7px 10px; }
+  .search-count { grid-column: 1 / -1; margin: 0; }
+  .fiche-list { margin-top: 8px; }
+  .workspace-footer { margin-top: 8px; }
+}
+@media (max-width: 760px) and (max-height: 500px) {
+  .notebook-shell > .topbar { flex-wrap: nowrap; gap: 8px; }
+  .campaign-identity { order: initial; width: auto; max-width: 160px; display: block; margin-left: auto; padding-top: 0; }
+  .campaign-identity > small { display: block; }
+  .workspace-heading { flex-direction: row; align-items: center; }
+  .workspace-heading h1 { font-size: 1.2rem; }
+  .fiche-top-actions { width: auto; margin-left: auto; }
+  .fiche-grid { grid-template-columns: minmax(120px, 32%) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+}

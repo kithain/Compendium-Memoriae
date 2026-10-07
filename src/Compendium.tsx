@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowLeft, BookOpen, Eye, LogOut, MapPin, MessageSquare,
   Pencil, Plus, RefreshCw, Save, Search, Trash2, Undo2, Users,
@@ -24,6 +24,7 @@ export type CompendiumProps = {
   campaignName: string;
   onSignOut: GuardedAction;
   onLeaveCampaign: GuardedAction;
+  footerActions?: ReactNode;
 };
 
 const stamp = (value: string) => new Intl.DateTimeFormat('fr-FR', {
@@ -43,7 +44,7 @@ const message = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
 export default function Compendium({
-  api, userName, isGM, campaignName, onSignOut, onLeaveCampaign,
+  api, userName, isGM, campaignName, onSignOut, onLeaveCampaign, footerActions,
 }: CompendiumProps) {
   const [type, setType] = useState<FicheType>('place');
   const [fiches, setFiches] = useState<Fiche[]>([]);
@@ -78,6 +79,8 @@ export default function Compendium({
   const pending = useRef<GuardedAction | null>(null);
   const noteFicheId = useRef<string | null>(null);
   const apiRef = useRef(api);
+  const pageArea = useRef<HTMLDivElement>(null);
+  const ficheList = useRef<HTMLElement>(null);
   apiRef.current = api;
 
   const playerView = !isGM || preview;
@@ -143,6 +146,10 @@ export default function Compendium({
   }, [reload]);
 
   useEffect(() => { if (!id && selected) setId(selected.id); }, [id, selected?.id]);
+
+  // A new selection starts at the top of its fiche without moving the list.
+  useEffect(() => { if (pageArea.current) pageArea.current.scrollTop = 0; }, [selected?.id, type, trash, !!draft]);
+  useEffect(() => { if (ficheList.current) ficheList.current.scrollTop = 0; }, [type, trash]);
 
   useEffect(() => {
     setAnnotations([]);
@@ -369,6 +376,7 @@ export default function Compendium({
       </Tabs>
       <div className="fiche-grid">
         <aside className="collection fiche-collection">
+          <div className="collection-controls">
           <div className="collection-title"><span>{type === 'place' ? 'LES LIEUX CONNUS' : 'LES PERSONNAGES RENCONTRÉS'}</span>
             <button className="icon-button" aria-label="Actualiser les fiches" disabled={busy || dirty} onClick={() => {
               void reload(); if (selected && !trash) void loadNotes(selected.id);
@@ -376,8 +384,9 @@ export default function Compendium({
           </div>
           <label className="fiche-search"><Search size={17} /><span className="sr-only">Rechercher un lieu ou un personnage</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={type === 'place' ? 'Rechercher un lieu…' : 'Rechercher un personnage…'} /></label>
           {search && <p className="search-count" role="status">{rows.length} sur {collection.length} {type === 'place' ? 'lieux' : 'personnages'}</p>}
-          {loading ? <p className="collection-hint" role="status">Ouverture des fiches…</p> : rows.length ? <div className="fiche-list">{rows.map(fiche =>
-            <button key={fiche.id} className={`fiche-link ${selected?.id === fiche.id && !draft ? 'active' : ''}`} disabled={busy} onClick={() => guard(() => {
+          </div>
+          {loading ? <p className="collection-hint" role="status">Ouverture des fiches…</p> : rows.length ? <nav className="fiche-list" ref={ficheList} aria-label={type === 'place' ? 'Liste des lieux' : 'Liste des PNJ'} tabIndex={0}>{rows.map(fiche =>
+            <button key={fiche.id} className={`fiche-link ${selected?.id === fiche.id && !draft ? 'active' : ''}`} aria-current={selected?.id === fiche.id && !draft ? 'true' : undefined} disabled={busy} onClick={() => guard(() => {
               setId(fiche.id); closeEditor(); resetNote();
             })}>
               <span className="fiche-mini-icon"><Icon size={19} /></span>
@@ -386,9 +395,9 @@ export default function Compendium({
                 <span className="fiche-list-meta">{!fiche.published && <span className="draft-badge">{trash ? 'Dans la corbeille' : 'Brouillon MJ'}</span>}<MessageSquare size={12} />{fiche.annotationCount} {fiche.annotationCount > 1 ? 'annotations' : 'annotation'}</span>
               </span>
             </button>,
-          )}</div> : <p className="collection-hint">{search ? 'Aucune fiche ne correspond à cette recherche.' : trash ? 'La corbeille est vide pour cette catégorie.' : gmView ? 'Ajoutez une fiche légère, puis rendez-la visible quand le groupe découvre ce lieu ou ce personnage.' : 'Les fiches publiées par le MJ apparaîtront ici.'}</p>}
+          )}</nav> : <p className="collection-hint">{search ? 'Aucune fiche ne correspond à cette recherche.' : trash ? 'La corbeille est vide pour cette catégorie.' : gmView ? 'Ajoutez une fiche légère, puis rendez-la visible quand le groupe découvre ce lieu ou ce personnage.' : 'Les fiches publiées par le MJ apparaîtront ici.'}</p>}
         </aside>
-        <div className="page-area">
+        <div className="page-area" ref={pageArea} role="region" aria-label={type === 'place' ? 'Fiche du lieu' : 'Fiche du PNJ'} tabIndex={0}>
           {actionError && <div className="notice error" role="alert">{actionError}</div>}
           {error && <div className="notice error" role="alert">{error}<button disabled={busy || dirty} onClick={() => void reload()}>Réessayer</button></div>}
           {draft ? <article className="journal-page fiche-editor">
@@ -443,7 +452,7 @@ export default function Compendium({
           </article>}
         </div>
       </div>
-      <footer className="workspace-footer"><span>Les fiches du MJ, les annotations du groupe.</span><span>Lieux · PNJ</span></footer>
+      <footer className="workspace-footer"><span>Les fiches du MJ, les annotations du groupe.</span><div className="workspace-footer-actions">{footerActions}<span>Lieux · PNJ</span></div></footer>
     </main>
     <AlertDialog open={!!deleteTarget} onOpenChange={open => {if (!open && !busy) {setDeleteTarget(null); setDeleteError('');}}}>
       <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Supprimer « {deleteTarget?.name} » ?</AlertDialogTitle><AlertDialogDescription>Cette fiche quittera les fiches actives. Les joueurs n’auront plus accès à son texte, ses annotations ni son image. Vous pourrez la restaurer depuis la corbeille du MJ.</AlertDialogDescription></AlertDialogHeader>

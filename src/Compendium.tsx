@@ -25,6 +25,7 @@ export type CompendiumProps = {
   onSignOut: GuardedAction;
   onLeaveCampaign: GuardedAction;
   footerActions?: ReactNode;
+  refreshRevision?: number;
 };
 
 const stamp = (value: string) => new Intl.DateTimeFormat('fr-FR', {
@@ -44,7 +45,7 @@ const message = (error: unknown, fallback: string) =>
   error instanceof Error ? error.message : fallback;
 
 export default function Compendium({
-  api, userName, isGM, campaignName, onSignOut, onLeaveCampaign, footerActions,
+  api, userName, isGM, campaignName, onSignOut, onLeaveCampaign, footerActions, refreshRevision = 0,
 }: CompendiumProps) {
   const [type, setType] = useState<FicheType>('place');
   const [fiches, setFiches] = useState<Fiche[]>([]);
@@ -81,6 +82,7 @@ export default function Compendium({
   const apiRef = useRef(api);
   const pageArea = useRef<HTMLDivElement>(null);
   const ficheList = useRef<HTMLElement>(null);
+  const lastRefreshRevision = useRef(refreshRevision);
   apiRef.current = api;
 
   const playerView = !isGM || preview;
@@ -162,19 +164,11 @@ export default function Compendium({
   }, [selected?.id, loadNotes, trash]);
 
   useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === 'visible' && !state.current.dirty && !state.current.busy) {
-        void reload();
-        if (state.current.selected && !trash) void loadNotes(state.current.selected.id);
-      }
-    };
-    const timer = window.setInterval(refresh, 30_000);
-    window.addEventListener('focus', refresh);
-    return () => {
-      window.clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-    };
-  }, [reload, loadNotes, trash]);
+    // Refresh only after an explicit import, without interrupting fiche reading.
+    if (lastRefreshRevision.current === refreshRevision) return;
+    lastRefreshRevision.current = refreshRevision;
+    void reload();
+  }, [refreshRevision, reload]);
 
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {

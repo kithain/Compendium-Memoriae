@@ -12,6 +12,8 @@ Le MJ voit les brouillons, crée et modifie les fiches, puis décide lesquelles 
 
 Les vues Lieux et PNJ disposent de deux défilements indépendants : la liste de navigation et le panneau de fiche, qui contient aussi les annotations. Le défilement reste dans le panneau utilisé, même à sa fin. La fiche sélectionnée reste surlignée ; sélectionner une nouvelle fiche remet uniquement son panneau de lecture en haut. Sur mobile, les panneaux sont empilés, ou placés côte à côte dans les petites fenêtres en paysage.
 
+La lecture n’est pas interrompue par une actualisation périodique ou au retour sur l’onglet. Le bouton **Actualiser les fiches**, à côté du titre de la liste, récupère les changements des autres membres de la campagne. Vos enregistrements et imports mettent immédiatement à jour les données affichées.
+
 Le bouton **Supprimer**, en bas de la fiche à côté de **Modifier la fiche**, est réservé au MJ. Une confirmation affiche le nom de la fiche avant de la déplacer dans la **Corbeille**. Les joueurs perdent l’accès à la fiche, à ses annotations et à son image. Le MJ peut la récupérer avec **Restaurer en brouillon** ; les annotations et l’image sont conservées, et la fiche doit être republiée explicitement. Les numéros de version protègent aussi la suppression et la restauration contre les modifications concurrentes. Un nouvel import ne recrée pas une fiche encore dans la corbeille.
 
 Les illustrations associées s’affichent dans leur fiche au format 4:3 (400 × 300). Elles sont conservées dans le bucket privé Supabase `compendium-images` et héritent des droits de la fiche : le MJ voit les brouillons, les membres de la campagne voient les images des fiches publiées. Le navigateur les télécharge avec sa session puis affiche un objet Blob temporaire.

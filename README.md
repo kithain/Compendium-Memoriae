@@ -55,4 +55,18 @@ Le MJ peut importer un export JSON privé depuis le bouton « Importer des fiche
 
 ## Publication
 
+Pour envoyer manuellement vos modifications locales sous Windows, double-cliquez sur **publier.cmd** à la racine du projet. Le script affiche les fichiers concernés et la destination, demande le message du commit puis une confirmation. Il ajoute les créations, modifications et suppressions non ignorées par Git, crée le commit et l’envoie sur `origin/main`. S’il reste un commit local à envoyer après un précédent échec, vous pouvez simplement relancer le script.
+
+Le script vérifie d’abord la branche distante. Si GitHub contient de nouveaux commits, il s’arrête pour vous laisser récupérer les changements. Il ne lance pas de pull automatique et n’utilise pas de push forcé. Une erreur d’envoi conserve le commit local.
+
+Pour consulter les fichiers concernés sans modifier Git ni contacter GitHub :
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\commit-push.ps1 -Preview
+```
+
+Le lanceur utilise une autorisation d’exécution limitée à son processus PowerShell ; il ne modifie pas la politique Windows enregistrée. Les scripts sont également utilisables depuis PowerShell, avec le paramètre facultatif `-Message "Description des changements"`.
+
+Cette publication concerne les fichiers du site. Les fiches et annotations enregistrées en ligne sont déjà dans Supabase. Les dossiers `.private/`, `public/images/`, `node_modules/`, `dist/` et les fichiers `.env` restent ignorés ; les images privées ne sont pas publiées sur GitHub.
+
 Dans GitHub, choisissez **Settings → Pages → Source → GitHub Actions**. Chaque push sur `main` lance les tests et la compilation, puis publie le dossier `dist`. Le workflow se trouve dans `.github/workflows/pages.yml`.

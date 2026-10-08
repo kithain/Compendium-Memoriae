@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowLeft, BookOpen, ChevronDown, ChevronUp, Eye, LogOut, MapPin, MessageSquare,
-  Pencil, Plus, RefreshCw, Save, Search, Trash2, Undo2, Users,
+  Feather, Hourglass, Pencil, Plus, RefreshCw, Save, Search, Shield, Sparkles, Trash2, Undo2, Users,
 } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import type { CompendiumApi } from './api';
 import type { Annotation, Fiche, FicheDraft, FicheType } from './lib/fiches';
-import { emptyFiche } from './lib/fiches';
+import { emptyFiche, ficheTypes, isFicheType } from './lib/fiches';
+import { loreCategories } from './lib/lore';
 import FicheImage from './components/FicheImage';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Checkbox } from './components/ui/checkbox';
@@ -16,6 +17,11 @@ import {
 } from './components/ui/alert-dialog';
 
 type GuardedAction = () => void | Promise<void>;
+
+const categoryIcons = {
+  place: MapPin, npc: Users, faction: Shield, cosmogony: Sparkles,
+  history: Hourglass, culture: Feather, knowledge: BookOpen,
+} satisfies Record<FicheType, typeof MapPin>;
 
 export type CompendiumProps = {
   api: CompendiumApi;
@@ -94,6 +100,7 @@ export default function Compendium({
   const pageArea = useRef<HTMLDivElement>(null);
   const ficheList = useRef<HTMLElement>(null);
   const lastRefreshRevision = useRef(refreshRevision);
+  const sectionTabs = useRef<HTMLDivElement>(null);
   apiRef.current = api;
 
   const playerView = !isGM || preview;
@@ -163,6 +170,14 @@ export default function Compendium({
   // A new selection starts at the top of its fiche without moving the list.
   useEffect(() => { if (pageArea.current) pageArea.current.scrollTop = 0; }, [selected?.id, type, trash, !!draft]);
   useEffect(() => { if (ficheList.current) ficheList.current.scrollTop = 0; }, [type, trash]);
+  useEffect(() => {
+    const list = sectionTabs.current;
+    const active = list?.querySelector<HTMLElement>('[data-state="active"]');
+    if (!list || !active) return;
+    const listBox = list.getBoundingClientRect(), activeBox = active.getBoundingClientRect();
+    if (activeBox.left < listBox.left) list.scrollLeft += activeBox.left - listBox.left;
+    else if (activeBox.right > listBox.right) list.scrollLeft += activeBox.right - listBox.right;
+  }, [type]);
   useEffect(() => {
     const list = ficheList.current;
     if (listCollapsed && list?.contains(document.activeElement)
@@ -288,6 +303,8 @@ export default function Compendium({
       setFiches(previous => [result, ...previous.filter(fiche => fiche.id !== result.id)]
         .sort((left, right) => left.name.localeCompare(right.name, 'fr')));
       setId(result.id);
+      setType(result.type);
+      if (result.type !== type) setQuery('');
       closeEditor();
       toast.success(result.published ? 'La fiche est visible par les joueurs.' : 'Le brouillon est enregistré.');
     } catch (cause) {
@@ -390,7 +407,10 @@ export default function Compendium({
     }
   }
 
-  const Icon = type === 'place' ? MapPin : Users;
+  const category = loreCategories[type];
+  const editorCategory = loreCategories[draft?.type ?? type];
+  const Icon = categoryIcons[type];
+  const EditorIcon = categoryIcons[draft?.type ?? type];
 
   return <div className="notebook-shell">
     <Toaster richColors />
@@ -411,7 +431,7 @@ export default function Compendium({
     </header>
     <main className="workspace">
       <div className="workspace-heading">
-        <div><div className="eyebrow">LIEUX & PERSONNAGES · {campaignName}</div><h1>{trash ? 'La corbeille du MJ.' : 'Les fiches de votre aventure.'}</h1>
+        <div><div className="eyebrow">LORE DE LA CAMPAGNE · {campaignName}</div><h1>{trash ? 'La corbeille du MJ.' : 'Les fiches de votre aventure.'}</h1>
           <p>{trash ? 'Restaurez une fiche supprimée : elle reviendra en brouillon avec ses annotations et son image.' : gmView ? 'Publiez ce que les personnages connaissent. Les joueurs ajoutent leurs notes.' : 'Retrouvez vos découvertes et annotez les fiches ensemble.'}</p>
         </div>
         <div className="fiche-top-actions">
@@ -419,30 +439,33 @@ export default function Compendium({
             setPreview(value === true); setTrash(false); closeEditor(); setId(null); resetNote(); setLoading(true);
           })} /><Eye size={16} />Vue joueurs</label>}
           {gmView && <button className="secondary" onClick={() => guard(() => {setTrash(!trash); setId(null); setQuery(''); closeEditor(); resetNote(); setLoading(true);})} disabled={busy}>{trash ? <ArrowLeft size={17}/> : <Trash2 size={17}/>} {trash ? 'Fiches actives' : 'Corbeille'}</button>}
-          {gmView && !trash && <button className="primary" onClick={start} disabled={busy} aria-label={type === 'place' ? 'Créer une fiche de lieu' : 'Créer une fiche de PNJ'}><Plus size={18} /><span className="desktop-action-label">{type === 'place' ? 'Nouveau lieu' : 'Nouveau PNJ'}</span><span className="mobile-action-label">Nouveau</span></button>}
+          {gmView && !trash && <button className="primary" onClick={start} disabled={busy} aria-label={category.createLabel}><Plus size={18} /><span className="desktop-action-label">{category.newLabel}</span><span className="mobile-action-label">Nouveau</span></button>}
         </div>
       </div>
       <Tabs value={type} onValueChange={value => guard(() => {
-        setType(value as FicheType); setId(null); setQuery(''); closeEditor(); resetNote();
+        if (!isFicheType(value)) return;
+        setType(value); setId(null); setQuery(''); closeEditor(); resetNote();
       })}>
-        <TabsList variant="line" className="section-tabs">
-          <TabsTrigger value="place" className="section-tab" disabled={busy}><MapPin size={18} />Lieux<span className="tab-count">{fiches.filter(fiche => fiche.type === 'place' && (!playerView || fiche.published)).length}</span></TabsTrigger>
-          <TabsTrigger value="npc" className="section-tab" disabled={busy}><Users size={18} />PNJ<span className="tab-count">{fiches.filter(fiche => fiche.type === 'npc' && (!playerView || fiche.published)).length}</span></TabsTrigger>
+        <TabsList ref={sectionTabs} variant="line" className="section-tabs" aria-label="Catégories du lore">
+          {ficheTypes.map(ficheType => {
+            const TabIcon = categoryIcons[ficheType];
+            return <TabsTrigger key={ficheType} value={ficheType} className="section-tab" disabled={busy}><TabIcon size={18} />{loreCategories[ficheType].label}<span className="tab-count">{fiches.filter(fiche => fiche.type === ficheType && !!fiche.deletedAt === trash && (!playerView || fiche.published)).length}</span></TabsTrigger>;
+          })}
         </TabsList>
       </Tabs>
       <div className={`fiche-grid${listCollapsed ? ' mobile-list-collapsed' : ''}`}>
         <aside className="collection fiche-collection">
           <button type="button" className="mobile-list-toggle" aria-expanded={!listCollapsed} aria-controls="compendium-fiche-list" onClick={() => setListCollapsed(value => !value)}><Icon size={16}/><span>{listCollapsed ? 'Choisir une fiche' : 'Réduire la liste'}</span>{listCollapsed ? <ChevronDown size={17}/> : <ChevronUp size={17}/>}</button>
           <div className="collection-controls">
-          <div className="collection-title"><span>{type === 'place' ? 'LES LIEUX CONNUS' : 'LES PERSONNAGES RENCONTRÉS'}</span>
+          <div className="collection-title"><span>{category.collectionTitle.toLocaleUpperCase('fr')}</span>
             <button className="icon-button" aria-label="Actualiser les fiches" disabled={busy || dirty} onClick={() => {
               void reload(); if (selected && !trash) void loadNotes(selected.id);
             }}><RefreshCw size={16} /></button>
           </div>
-          <label className="fiche-search"><Search size={17} /><span className="sr-only">Rechercher un lieu ou un personnage</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={type === 'place' ? 'Rechercher un lieu…' : 'Rechercher un personnage…'} /></label>
-          {search && <p className="search-count" role="status">{rows.length} sur {collection.length} {type === 'place' ? 'lieux' : 'personnages'}</p>}
+          <label className="fiche-search"><Search size={17} /><span className="sr-only">Rechercher dans {category.label}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={category.searchPlaceholder} /></label>
+          {search && <p className="search-count" role="status">{rows.length} sur {collection.length} fiches</p>}
           </div>
-          {loading ? <p className="collection-hint" role="status">Ouverture des fiches…</p> : rows.length ? <nav id="compendium-fiche-list" className="fiche-list" ref={ficheList} aria-label={type === 'place' ? 'Liste des lieux' : 'Liste des PNJ'} tabIndex={0}>{rows.map(fiche =>
+          {loading ? <p className="collection-hint" role="status">Ouverture des fiches…</p> : rows.length ? <nav id="compendium-fiche-list" className="fiche-list" ref={ficheList} aria-label={`Liste : ${category.label}`} tabIndex={0}>{rows.map(fiche =>
             <button key={fiche.id} className={`fiche-link ${selected?.id === fiche.id && !draft ? 'active' : ''}`} aria-current={selected?.id === fiche.id && !draft ? 'true' : undefined} disabled={busy} onClick={() => guard(() => {
               setId(fiche.id); setListCollapsed(true); closeEditor(); resetNote();
             })}>
@@ -452,25 +475,30 @@ export default function Compendium({
                 <span className="fiche-list-meta">{!fiche.published && <span className="draft-badge">{trash ? 'Dans la corbeille' : 'Brouillon MJ'}</span>}<MessageSquare size={12} />{fiche.annotationCount} {fiche.annotationCount > 1 ? 'annotations' : 'annotation'}</span>
               </span>
             </button>,
-          )}</nav> : <p className="collection-hint">{search ? 'Aucune fiche ne correspond à cette recherche.' : trash ? 'La corbeille est vide pour cette catégorie.' : gmView ? 'Ajoutez une fiche légère, puis rendez-la visible quand le groupe découvre ce lieu ou ce personnage.' : 'Les fiches publiées par le MJ apparaîtront ici.'}</p>}
+          )}</nav> : <p className="collection-hint">{search ? 'Aucune fiche ne correspond à cette recherche.' : trash ? 'La corbeille est vide pour cette catégorie.' : gmView ? 'Ajoutez une fiche, puis rendez-la visible quand le groupe la découvre.' : 'Les fiches publiées par le MJ apparaîtront ici.'}</p>}
         </aside>
-        <div className="page-area" ref={pageArea} role="region" aria-label={type === 'place' ? 'Fiche du lieu' : 'Fiche du PNJ'} tabIndex={0}>
+        <div className="page-area" ref={pageArea} role="region" aria-label={`Fiche : ${editorCategory.label}`} tabIndex={0}>
           {actionError && <div className="notice error" role="alert">{actionError}</div>}
           {error && <div className="notice error" role="alert">{error}<button disabled={busy || dirty} onClick={() => void reload()}>Réessayer</button></div>}
           {draft ? <article className="journal-page fiche-editor">
-            <div className="page-topline"><span><Icon size={15} />{type === 'place' ? 'FICHE DE LIEU' : 'FICHE DE PNJ'}</span><span>VERSION JOUEURS</span></div>
+            <div className="page-topline"><span><EditorIcon size={15} />{editorCategory.singular.toLocaleUpperCase('fr')} · FICHE DU MJ</span><span>VERSION JOUEURS</span></div>
             <form className="editor" onSubmit={event => { event.preventDefault(); void saveFiche(); }}>
               <fieldset disabled={busy}>
+                <label className="field-label" htmlFor="fiche-type">Catégorie du lore</label>
+                <select id="fiche-type" className="fiche-type-select" value={draft.type} onChange={event => {
+                  const value = event.target.value;
+                  if (isFicheType(value)) setDraft({ ...draft, type: value });
+                }}>{ficheTypes.map(ficheType => <option key={ficheType} value={ficheType}>{loreCategories[ficheType].label}</option>)}</select>
                 <label className="field-label" htmlFor="fiche-name">Nom</label>
-                <input id="fiche-name" className="title-input" value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} required maxLength={160} placeholder={type === 'place' ? 'Le nom du lieu…' : 'Le nom du personnage…'} autoFocus />
+                <input id="fiche-name" className="title-input" value={draft.name} onChange={event => setDraft({ ...draft, name: event.target.value })} required maxLength={160} placeholder={editorCategory.namePlaceholder} autoFocus />
                 <div className="fiche-fields">
-                  <div><label className="field-label" htmlFor="fiche-subtitle">{type === 'place' ? 'Type de lieu' : 'Rôle connu'}</label><input id="fiche-subtitle" value={draft.subtitle} onChange={event => setDraft({ ...draft, subtitle: event.target.value })} maxLength={160} placeholder={type === 'place' ? 'Taverne, quartier, bibliothèque…' : 'Herboriste, garde, marchande…'} /></div>
-                  <div><label className="field-label" htmlFor="fiche-location">{type === 'place' ? 'Quartier ou région' : 'Lieu connu'}</label><input id="fiche-location" value={draft.location} onChange={event => setDraft({ ...draft, location: event.target.value })} maxLength={160} placeholder="Ce que les personnages connaissent…" /></div>
+                  <div><label className="field-label" htmlFor="fiche-subtitle">{editorCategory.subtitleLabel}</label><input id="fiche-subtitle" value={draft.subtitle} onChange={event => setDraft({ ...draft, subtitle: event.target.value })} maxLength={160} placeholder={editorCategory.subtitlePlaceholder} /></div>
+                  <div><label className="field-label" htmlFor="fiche-location">{editorCategory.locationLabel}</label><input id="fiche-location" value={draft.location} onChange={event => setDraft({ ...draft, location: event.target.value })} maxLength={160} placeholder={editorCategory.locationPlaceholder} /></div>
                 </div>
                 <label className="field-label" htmlFor="fiche-summary">Présentation courte</label>
-                <textarea id="fiche-summary" className="summary-input" value={draft.summary} onChange={event => setDraft({ ...draft, summary: event.target.value })} required maxLength={300} placeholder="Deux ou trois phrases pour reconnaître le lieu ou le PNJ." />
+                <textarea id="fiche-summary" className="summary-input" value={draft.summary} onChange={event => setDraft({ ...draft, summary: event.target.value })} required maxLength={300} placeholder={editorCategory.summaryPlaceholder} />
                 <label className="field-label" htmlFor="fiche-description">Informations révélées</label>
-                <textarea id="fiche-description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} maxLength={6000} placeholder="Apparence, services connus, faits découverts en partie…" />
+                <textarea id="fiche-description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} maxLength={6000} placeholder={editorCategory.descriptionPlaceholder} />
                 <label className="publish-choice"><Checkbox checked={draft.published} onCheckedChange={value => setDraft({ ...draft, published: value === true })} disabled={busy} /><span><strong>Visible par les joueurs</strong><small>Décochez pour garder cette fiche en brouillon MJ.</small></span></label>
                 <p className="editor-help">Cette fiche contient uniquement la version destinée aux joueurs.</p>
                 {saveError && <p className="save-error" role="alert">{saveError}</p>}
@@ -479,7 +507,7 @@ export default function Compendium({
             </form>
           </article> : selected ? <>
             <article className="journal-page fiche-reader">
-              <div className="page-topline"><span><Icon size={15} />{selected.type === 'place' ? 'LIEU' : 'PNJ'} · FICHE DU MJ</span><span className={selected.published ? 'published-badge' : 'draft-badge'}>{trash ? 'Dans la corbeille' : selected.published ? 'Partagée avec les joueurs' : 'Brouillon MJ'}</span></div>
+              <div className="page-topline"><span><Icon size={15} />{category.singular.toLocaleUpperCase('fr')} · FICHE DU MJ</span><span className={selected.published ? 'published-badge' : 'draft-badge'}>{trash ? 'Dans la corbeille' : selected.published ? 'Partagée avec les joueurs' : 'Brouillon MJ'}</span></div>
               <div className="fiche-identity"><div className="fiche-large-icon"><Icon size={34} /></div><div>{selected.subtitle && <div className="fiche-role">{selected.subtitle}</div>}<h2>{selected.name}</h2>{selected.location && <div className="fiche-location"><MapPin size={15} />{selected.location}</div>}</div></div>
               <p className="fiche-summary">{selected.summary}</p>
               {selected.imagePath && !trash && <FicheImage key={selected.imagePath} path={selected.imagePath} name={selected.name} load={api.loadImage}/>}
@@ -503,12 +531,12 @@ export default function Compendium({
               </form>
             </section>}
           </> : <article className="journal-page">
-            <div className="page-topline"><span><Icon size={15} />{type === 'place' ? 'LES LIEUX DE LA CAMPAGNE' : 'LES VISAGES DE LA CAMPAGNE'}</span><span>FICHES PARTAGÉES</span></div>
-            <div className="empty-page"><span className="empty-symbol"><Icon size={30} /></span><div className="eyebrow">{trash ? 'CORBEILLE DU MJ' : gmView ? 'PRÉPARER UNE DÉCOUVERTE' : 'LES DÉCOUVERTES DU GROUPE'}</div><h2>{trash ? 'Aucune fiche supprimée.' : gmView ? (type === 'place' ? 'Le premier lieu à partager.' : 'Le premier visage à retenir.') : 'Les prochaines découvertes vous attendent.'}</h2><p>{trash ? 'Les fiches supprimées de cette catégorie apparaîtront ici. Vous pourrez les restaurer en brouillon.' : gmView ? 'Un nom, une présentation courte et les informations révélées. Les joueurs pourront ensuite ajouter leurs annotations sur chaque fiche.' : 'Votre MJ publie ici les lieux et les personnages que vous connaissez. Chaque fiche dispose d’un espace pour vos annotations.'}</p>{gmView && !trash && <button className="primary" onClick={start} disabled={busy}><Plus size={17} />{type === 'place' ? 'Créer une fiche de lieu' : 'Créer une fiche de PNJ'}</button>}{!trash && <div className="empty-prompts"><div><span>01</span>La fiche du MJ</div><div><span>02</span>Les informations connues</div><div><span>03</span>Les notes des joueurs</div></div>}</div>
+              <div className="page-topline"><span><Icon size={15} />{category.pageTitle.toLocaleUpperCase('fr')}</span><span>FICHES PARTAGÉES</span></div>
+            <div className="empty-page"><span className="empty-symbol"><Icon size={30} /></span><div className="eyebrow">{trash ? 'CORBEILLE DU MJ' : gmView ? 'PRÉPARER UNE DÉCOUVERTE' : 'LES DÉCOUVERTES DU GROUPE'}</div><h2>{trash ? 'Aucune fiche supprimée.' : gmView ? category.emptyTitle : 'Les prochaines découvertes vous attendent.'}</h2><p>{trash ? 'Les fiches supprimées de cette catégorie apparaîtront ici. Vous pourrez les restaurer en brouillon.' : gmView ? 'Un nom, une présentation courte et les informations révélées. Les joueurs pourront ensuite ajouter leurs annotations sur chaque fiche.' : 'Votre MJ publie ici les découvertes et les savoirs de votre campagne. Chaque fiche dispose d’un espace pour vos annotations.'}</p>{gmView && !trash && <button className="primary" onClick={start} disabled={busy}><Plus size={17} />{category.createLabel}</button>}{!trash && <div className="empty-prompts"><div><span>01</span>La fiche du MJ</div><div><span>02</span>Les informations connues</div><div><span>03</span>Les notes des joueurs</div></div>}</div>
           </article>}
         </div>
       </div>
-      <footer className="workspace-footer"><span>Les fiches du MJ, les annotations du groupe.</span><div className="workspace-footer-actions">{footerActions}<span>Lieux · PNJ</span></div></footer>
+      <footer className="workspace-footer"><span>Les fiches du MJ, les annotations du groupe.</span><div className="workspace-footer-actions">{footerActions}<span>Le lore de votre campagne</span></div></footer>
     </main>
     <AlertDialog open={!!deleteTarget} onOpenChange={open => {if (!open && !busy) {setDeleteTarget(null); setDeleteError('');}}}>
       <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Supprimer « {deleteTarget?.name} » ?</AlertDialogTitle><AlertDialogDescription>Cette fiche quittera les fiches actives. Les joueurs n’auront plus accès à son texte, ses annotations ni son image. Vous pourrez la restaurer depuis la corbeille du MJ.</AlertDialogDescription></AlertDialogHeader>

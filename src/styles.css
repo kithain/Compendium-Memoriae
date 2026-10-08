@@ -510,3 +510,41 @@
 @media (max-width: 560px) and (max-height: 600px) {
   .workspace-heading h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
+
+/* Keep every lore category reachable without widening the page. */
+.workspace > [data-slot=tabs] { min-width: 0; }
+.section-tabs {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #627b86 #142b38;
+  scroll-padding-inline: 8px;
+  gap: 18px;
+}
+.section-tabs .section-tab {
+  flex: 0 0 auto;
+  white-space: nowrap!important;
+  padding-inline: 8px!important;
+}
+.section-tabs .tab-count { width: auto; min-width: 22px; padding-inline: 4px; }
+.section-tabs .section-tab:focus-visible { outline-offset: -4px; }
+.fiche-type-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  margin-bottom: 20px;
+  border: 1px solid #b3c7cb;
+  border-radius: 4px;
+  background: #f8faf9;
+  color: #304c59;
+  font-size: 1rem;
+}
+@media (max-width: 1050px) {
+  .section-tabs { gap: 10px; }
+}
+@media (max-width: 760px) {
+  .section-tabs { justify-content: flex-start; gap: 4px; }
+  .section-tabs .section-tab { padding-inline: 12px!important; }
+}

@@ -7,7 +7,7 @@ revoke all on schema compendium from public, anon, authenticated;
 create table if not exists compendium.fiches (
   campaign_id uuid not null references diceforge_v2.campaigns(id),
   id uuid not null default gen_random_uuid(),
-  type text not null check (type in ('place','npc')),
+  type text not null check (type in ('place','npc','faction','cosmogony','history','culture','knowledge')),
   name text not null check (length(trim(name)) between 1 and 160),
   subtitle text not null default '' check (length(subtitle)<=160),
   location text not null default '' check (length(location)<=160),
@@ -87,7 +87,7 @@ language plpgsql immutable set search_path='' as $$
 declare k text; limit_length integer;
 begin
   if jsonb_typeof(p_fiche) is distinct from 'object' or
-     p_fiche->>'type' is null or p_fiche->>'type' not in ('place','npc') or
+     p_fiche->>'type' is null or p_fiche->>'type' not in ('place','npc','faction','cosmogony','history','culture','knowledge') or
      jsonb_typeof(p_fiche->'published') is distinct from 'boolean'
   then raise exception 'Fiche invalide' using errcode='22023'; end if;
   for k,limit_length in select * from (values ('name',160),('subtitle',160),('location',160),('summary',300),('description',6000)) v loop

@@ -2,6 +2,8 @@
 
 Vérification du 7 octobre 2026 dans un navigateur Chromium, avec des dimensions de fenêtre simulées et des données fictives. Aucun message réel n’a été supprimé pour ces essais.
 
+Les sections historiques ci-dessous décrivent les essais effectués avant l’ajout des cinq nouvelles catégories de lore. Elles portent sur Lieux et PNJ. Les essais ciblés des sept onglets, effectués le 8 octobre 2026, et la matrice complète restant à couvrir figurent séparément en fin de document.
+
 ## Formats vérifiés
 
 Chaque format a été vérifié en espace MJ et en espace joueurs, sur les vues Lieux et PNJ : **28 combinaisons**.
@@ -79,6 +81,48 @@ La migration `compendium_author_annotation_deletion` a été appliquée au proje
 Les conseillers Supabase signalent les fonctions publiques `SECURITY DEFINER` accessibles à `authenticated`. C’est le fonctionnement voulu pour `cm_save_annotation` et `cm_delete_annotation` : les tables restent privées et les fonctions contrôlent explicitement la session, l’appartenance à la campagne, la visibilité de la fiche, l’auteur et la version. Leur `search_path` est vide. Voir [la notice du conseiller et ses remédiations](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable).
 
 La notice informative « RLS activée sans politique » sur les tables privées `compendium.fiches` et `compendium.annotations` est également attendue : les clients n’ont aucun droit direct et passent par ces RPC. Voir [la notice RLS et ses remédiations](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy).
+
+## Catégories de lore : schéma déployé le 8 octobre 2026
+
+La migration `compendium_lore_categories`, correspondant au complément `supabase/lore-types.sql`, a été appliquée au projet Dice Forge `bwrylcvkplonkfhnegvm`.
+
+Le contrôle avant et après migration conserve les mêmes empreintes pour les **140 fiches**, les **2 annotations** et les définitions des fonctions publiques `cm_*`. Les contenus existants et les contrôles d’accès de ces RPC restent donc inchangés. La fonction de validation des types est privée ; elle accepte `place`, `npc`, `faction`, `cosmogony`, `history`, `culture` et `knowledge`. Ce dernier contrôle a appelé la fonction sans enregistrer de fiche.
+
+Les avis Compendium de niveau INFO « RLS activée sans politique » restent identiques : les tables privées sont toujours accessibles aux clients uniquement par les RPC prévues. La suite complète des tests du projet passe : **72 tests**.
+
+## Sept onglets de lore : essais ciblés du 8 octobre 2026
+
+Essais automatisés avec Playwright et Chromium headless, sur le composant `Compendium` réel servi par Vite. L’API est remplacée par des données en mémoire : trois fiches fictives par catégorie, dont un brouillon, des notes fictives et une illustration SVG synthétique. Toutes les requêtes hors loopback sont bloquées. Aucun compte réel, contenu de campagne ou projet Supabase n’a été utilisé.
+
+Les parcours suivants passent :
+
+- À 1280 × 720 en espace MJ, présence des sept onglets, sélection de chaque catégorie, recherche d’une fiche et affichage de la fiche sélectionnée.
+- Création d’un brouillon dans Factions, reclassement vers Cosmogonie via **Catégorie du lore**, ouverture automatique de l’onglet cible et retrait de la fiche de son ancien onglet.
+- Changement d’onglet avec une fiche ou une annotation non enregistrée : la confirmation conserve le contenu lorsqu’on continue à écrire, ou permet la navigation après abandon.
+- En rôle joueur et dans l’aperçu joueur du MJ à 1280 × 720, seuls les deux exemples publiés de chaque catégorie apparaissent ; le formulaire de modification MJ est absent dans le rôle joueur.
+- À 390 × 844 et 320 × 568 en espace MJ, accès aux sept catégories, recherche et sélection d’une fiche, puis repli de la liste mobile.
+- Sur ces deux formats mobiles, navigation des onglets par les touches Début, Fin et Flèche droite ; l’onglet Savoirs reste entièrement visible après activation au clavier. La barre défile horizontalement et la page reste contenue dans la largeur de la fenêtre.
+
+| Format | Largeur visible de la barre | Largeur défilante | Défilement vers Savoirs | Largeur de la page |
+| --- | --- | --- | --- | --- |
+| 390 × 844 | 359 px | 528 px | 169 px | 390 px |
+| 320 × 568 | 294 px | 528 px | 234 px | 320 px |
+
+Aucune erreur d’exécution du navigateur ni tentative de requête hors loopback n’a été relevée. Le harness et le script restent locaux dans `.private/lore-preview.html`, `.private/lore-preview.tsx` et `.private/lore-ui-check.mjs`.
+
+## Sept onglets de lore : matrice complète à couvrir
+
+Reprendre les sept formats du tableau en espace MJ et en espace joueur, pour **Lieux**, **PNJ**, **Factions**, **Cosmogonie**, **Histoire**, **Cultures** et **Savoirs** : **98 combinaisons** dans la matrice complète. Les essais ciblés précédents ne valident pas cette matrice entière. Pour les essais avec une base dédiée, appliquer au préalable `supabase/lore-types.sql` après `supabase/annotations.sql` sur l’environnement d’essai.
+
+- À 320 px et 390 px, atteindre les sept onglets par défilement horizontal, sans créer de débordement horizontal de la page. Vérifier aussi le défilement tactile ou au pointeur.
+- Parcourir les onglets au clavier et vérifier que l’onglet focalisé reste visible, que son libellé est accessible et que l’état sélectionné est identifiable. Les icônes et compteurs peuvent être masqués sur mobile ; les noms des catégories doivent rester lisibles.
+- Ouvrir chaque catégorie, vérifier le filtrage des fiches et la recherche, puis sélectionner une fiche et retrouver sa surbrillance. Vérifier que la sélection et les résultats appartiennent bien à l’onglet courant.
+- Reprendre les contrôles de défilement indépendant de la liste et du lecteur, ainsi que l’ouverture, le repli et la réouverture de **Choisir une fiche** en portrait mobile.
+- En espace MJ, créer, modifier et publier une fiche de chaque catégorie ; vérifier son affichage dans l’espace joueur. Contrôler aussi les catégories vides et les brouillons invisibles aux joueurs.
+- Ajouter, modifier et supprimer une annotation fictive dans chaque catégorie, puis vérifier la conservation d’un brouillon de note lors d’un changement d’onglet.
+- Vérifier une illustration autorisée dans chaque catégorie, la suppression de sa fiche et sa restauration en brouillon : notes et image conservées, accès joueur rétabli seulement après republication.
+- Importer un JSON fictif comprenant les sept valeurs `place`, `npc`, `faction`, `cosmogony`, `history`, `culture` et `knowledge`. Vérifier le classement des fiches, leur état privé, le rejet d’un type inconnu et la conservation des fiches déjà présentes lors d’un nouvel import.
+- À 320 px et 390 px, vérifier que les formulaires de création, les confirmations et la fenêtre d’import restent dans la fenêtre, avec des cibles tactiles et un focus visibles.
 
 ## Limites
 

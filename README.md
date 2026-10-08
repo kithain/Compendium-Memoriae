@@ -1,6 +1,6 @@
 # Compendium Memoriae
 
-Fiches de lieux et de PNJ partagées avec les joueurs, accompagnées d’annotations collectives.
+Fiches de lore partagées avec les joueurs, accompagnées d’annotations collectives : lieux, PNJ, factions, cosmogonie, histoire, cultures et savoirs.
 
 **Site : https://kithain.github.io/Compendium-Memoriae/**
 
@@ -12,11 +12,15 @@ En cas d’erreur pendant l’ouverture, **Réessayer** relance le chargement. *
 
 Le MJ voit les brouillons, crée et modifie les fiches, puis décide lesquelles publier. Les joueurs voient uniquement les fiches publiées et ajoutent leurs annotations. Chacun peut modifier ou supprimer ses propres annotations ; le texte officiel reste réservé au MJ. Les fiches et notes sont partagées entre les salons rattachés à la même campagne.
 
+Les onglets **Lieux**, **PNJ**, **Factions**, **Cosmogonie**, **Histoire**, **Cultures** et **Savoirs** organisent les fiches par thème. Chaque catégorie dispose des mêmes fonctions : création en brouillon, édition, publication, recherche, notes du groupe, illustration, suppression et restauration. Sur un petit écran, la barre d’onglets défile horizontalement pour garder toutes les catégories accessibles ; les libellés restent visibles même lorsque les icônes et les compteurs sont masqués.
+
+Dans le formulaire MJ, **Catégorie du lore** permet de choisir le thème d’une nouvelle fiche ou de reclasser une fiche existante. Après l’enregistrement, son onglet s’ouvre sur la fiche. Le reclassement conserve son état de publication, ses annotations et son illustration.
+
 La corbeille à côté d’une annotation ouvre une confirmation de suppression. Seul son auteur dispose de cette action, y compris côté serveur : le MJ ne peut pas supprimer les messages des autres joueurs. Le texte est effacé et remplacé par **« Message supprimé par l’utilisateur. »**, avec l’auteur et la date conservés. Cette suppression ne peut pas être annulée ; la trace reste à sa place dans la conversation et ne peut plus être modifiée. Les autres brouillons en cours restent intacts.
 
 La section **Notes du groupe** présente les messages dans une liste compacte : auteur, date discrète et texte complet. Les boutons de modification et de suppression restent à côté des messages de leur auteur. Le champ **Écrire une note…** tient sur deux lignes et conserve la possibilité de s’agrandir.
 
-Les vues Lieux et PNJ disposent de deux défilements indépendants : la liste de navigation et le panneau de fiche, qui contient aussi les annotations. Le défilement reste dans le panneau utilisé, même à sa fin. La fiche sélectionnée reste surlignée ; sélectionner une nouvelle fiche remet uniquement son panneau de lecture en haut. Sur mobile, **Choisir une fiche** ouvre la liste au-dessus du lecteur. Elle se replie après une sélection pour libérer l’espace de lecture, puis retrouve la fiche active à sa réouverture. Les petites fenêtres en paysage conservent les deux colonnes.
+Toutes les vues de lore disposent de deux défilements indépendants : la liste de navigation et le panneau de fiche, qui contient aussi les annotations. Le défilement reste dans le panneau utilisé, même à sa fin. La fiche sélectionnée reste surlignée ; sélectionner une nouvelle fiche remet uniquement son panneau de lecture en haut. Sur mobile, **Choisir une fiche** ouvre la liste au-dessus du lecteur. Elle se replie après une sélection pour libérer l’espace de lecture, puis retrouve la fiche active à sa réouverture. Les petites fenêtres en paysage conservent les deux colonnes.
 
 La lecture n’est pas interrompue par une actualisation périodique ou au retour sur l’onglet. Le bouton **Actualiser les fiches**, à côté du titre de la liste, récupère les changements des autres membres de la campagne. Vos enregistrements et imports mettent immédiatement à jour les données affichées.
 
@@ -57,9 +61,23 @@ Pour les illustrations, appliquez ensuite `supabase/images.sql` une fois. Ce com
 
 Appliquez ensuite `supabase/deletion.sql` pour la corbeille, après les deux scripts précédents. Ce complément ajoute `deleted_at`, les fonctions de suppression/restauration et le filtrage des fiches supprimées dans toutes les lectures, écritures et autorisations d’images. Les fiches utilisent une suppression récupérable ; aucun bouton ne les purge définitivement.
 
-Appliquez enfin `supabase/annotations.sql` pour permettre à l’auteur d’effacer le texte de ses propres messages tout en conservant une trace. Ce script ajoute `annotations.deleted_at`, la fonction `cm_delete_annotation` et les protections contre la modification d’un message déjà supprimé. Le numéro de version protège aussi cette action des modifications concurrentes.
+Appliquez ensuite `supabase/annotations.sql` pour permettre à l’auteur d’effacer le texte de ses propres messages tout en conservant une trace. Ce script ajoute `annotations.deleted_at`, la fonction `cm_delete_annotation` et les protections contre la modification d’un message déjà supprimé. Le numéro de version protège aussi cette action des modifications concurrentes.
 
-Le MJ peut importer un export JSON privé depuis le bouton « Importer des fiches en brouillon » en bas de l’écran, qui ouvre une fenêtre dédiée. Chaque objet contient `id` (UUID), `type` (`place` ou `npc`), `name`, `subtitle`, `location`, `summary` et `description`. Toutes les fiches importées démarrent privées. Un nouvel import ignore les identifiants déjà présents et préserve leurs modifications et annotations. Les exports restent hors du dépôt, dans `.private/` par exemple.
+Appliquez enfin `supabase/lore-types.sql`, après `supabase/annotations.sql`, pour autoriser les sept catégories de lore. Ce complément met à jour la contrainte des types ainsi que leur validation lors de l’enregistrement et de l’import. Il est nécessaire sur un projet existant pour créer ou importer les nouvelles catégories ; les fiches de lieux et de PNJ conservent leur type.
+
+Le MJ peut importer un export JSON privé depuis le bouton « Importer des fiches en brouillon » en bas de l’écran, qui ouvre une fenêtre dédiée. Chaque objet contient `id` (UUID), `type`, `name`, `subtitle`, `location`, `summary` et `description`. Le champ `type` accepte les valeurs suivantes :
+
+| Onglet | Valeur JSON de `type` |
+| --- | --- |
+| Lieux | `place` |
+| PNJ | `npc` |
+| Factions | `faction` |
+| Cosmogonie | `cosmogony` |
+| Histoire | `history` |
+| Cultures | `culture` |
+| Savoirs | `knowledge` |
+
+Un même fichier peut mélanger ces catégories. Toutes les fiches importées démarrent privées. Un nouvel import ignore les identifiants déjà présents et préserve leurs modifications et annotations. Les exports restent hors du dépôt, dans `.private/` par exemple.
 
 ## Publication
 

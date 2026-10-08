@@ -1,5 +1,6 @@
-export const ficheTypes=['place','npc'] as const;
+export const ficheTypes=['place','npc','faction','cosmogony','history','culture','knowledge'] as const;
 export type FicheType=typeof ficheTypes[number];
+export function isFicheType(value:string):value is FicheType{return ficheTypes.some(type=>type===value);}
 export type FicheDraft={type:FicheType;name:string;subtitle:string;location:string;summary:string;description:string;published:boolean};
 export type Fiche=FicheDraft & {id:string;updatedAt:string;version:number;annotationCount:number;imagePath?:string|null;deletedAt?:string|null};
 export type Annotation={id:string;ficheId:string;body:string;author:string;createdAt:string;updatedAt:string;version:number;canEdit:boolean;canDelete?:boolean;deletedAt?:string|null};

@@ -30,6 +30,12 @@ Les illustrations associées s’affichent dans leur fiche au format 4:3 (400 ×
 
 Les fichiers placés localement dans `public/images/` sont des sources de travail : ce dossier est ignoré par Git et Vite ne le publie pas. Les associations et les fichiers de transfert restent dans `.private/` ; ni les illustrations privées ni la liste des personnages ne sont incluses dans les fichiers statiques du site.
 
+Les informations révélées peuvent contenir des organigrammes éditables au format des callouts Obsidian. Les cadres, les rangées et les flèches se mettent en forme dans le lecteur et dans l’onglet **Visuel** de l’éditeur. Leur structure se modifie dans l’onglet **Texte**. Voir [le modèle et l’outil d’export](docs/organigrammes.md).
+
+Les tableaux Markdown sont pris en charge dans **Informations révélées** et les notes du groupe. **Ajouter un tableau** ajoute un modèle à la fin du texte ; les cellules sont modifiables dans **Visuel**, la structure dans **Texte**. Les tableaux larges défilent dans leur cadre. Voir [le format et les exemples](docs/tableaux.md).
+
+Les fiches MJ et les notes des joueurs utilisent une barre de rédaction avec titres, gras, italique, listes, liens, tableaux et historique. Le trombone et le glisser-déposer acceptent les images PNG/JPEG/GIF/WebP/BMP/AVIF, les PDF, les fichiers `.md` et `.txt`, avec **2 Mo maximum par fichier** (2 000 000 octets) et dix pièces jointes par contenu. Les fichiers restent dans le bucket privé `compendium-attachments` ; leur accès suit la visibilité de la fiche et la présence du message. Les fichiers déposés avant l’enregistrement sont réservés à leur auteur. Voir [le guide de l’éditeur](docs/editeur.md).
+
 ## Données et accès
 
 Le site est un frontend statique hébergé sur GitHub Pages. Les données sont stockées dans le projet Supabase de Dice-Forge, dans le schéma privé `compendium`. Aucun contenu de campagne n’est livré dans le dépôt ou dans les fichiers du site.
@@ -63,7 +69,9 @@ Appliquez ensuite `supabase/deletion.sql` pour la corbeille, après les deux scr
 
 Appliquez ensuite `supabase/annotations.sql` pour permettre à l’auteur d’effacer le texte de ses propres messages tout en conservant une trace. Ce script ajoute `annotations.deleted_at`, la fonction `cm_delete_annotation` et les protections contre la modification d’un message déjà supprimé. Le numéro de version protège aussi cette action des modifications concurrentes.
 
-Appliquez enfin `supabase/lore-types.sql`, après `supabase/annotations.sql`, pour autoriser les sept catégories de lore. Ce complément met à jour la contrainte des types ainsi que leur validation lors de l’enregistrement et de l’import. Il est nécessaire sur un projet existant pour créer ou importer les nouvelles catégories ; les fiches de lieux et de PNJ conservent leur type.
+Appliquez ensuite `supabase/lore-types.sql`, après `supabase/annotations.sql`, pour autoriser les sept catégories de lore. Ce complément met à jour la contrainte des types ainsi que leur validation lors de l’enregistrement et de l’import. Il est nécessaire sur un projet existant pour créer ou importer les nouvelles catégories ; les fiches de lieux et de PNJ conservent leur type.
+
+Appliquez enfin `supabase/attachments.sql` pour activer les pièces jointes. Le script ajoute les réservations, les fonctions de sauvegarde avec fichiers, le bucket privé limité à 2 Mo et ses droits de dépôt/lecture/nettoyage. Il peut être réexécuté. Les anciens appels sans fichiers restent compatibles. Aucun fichier de campagne n’est livré dans le frontend ; les téléchargements passent par la session et un Blob local, sans URL publique.
 
 Le MJ peut importer un export JSON privé depuis le bouton « Importer des fiches en brouillon » en bas de l’écran, qui ouvre une fenêtre dédiée. Chaque objet contient `id` (UUID), `type`, `name`, `subtitle`, `location`, `summary` et `description`. Le champ `type` accepte les valeurs suivantes :
 

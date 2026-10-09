@@ -1,0 +1,72 @@
+/* Tableaux Markdown : défilement limité au tableau, y compris dans l'aperçu. */
+.structured-content .structured-table-scroll {
+  box-sizing: border-box;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  margin: 20px 0 26px;
+  overflow-x: auto;
+  border: 1px solid #bdcdca;
+  border-radius: 5px;
+  scrollbar-width: thin;
+}
+
+.structured-content .structured-table-scroll:focus-visible {
+  outline: 3px solid #b89964;
+  outline-offset: 4px;
+}
+
+.structured-content .structured-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: auto;
+  color: inherit;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.structured-content .structured-table th,
+.structured-content .structured-table td {
+  min-width: 90px;
+  max-width: 36rem;
+  padding: 10px 12px;
+  border-right: 1px solid #c6d2cf;
+  border-bottom: 1px solid #c6d2cf;
+  vertical-align: top;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.structured-content .structured-table th {
+  background: #e0e8e3;
+  color: #365962;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.structured-content .structured-table tbody tr:nth-child(even) {
+  background: #456c7508;
+}
+
+.structured-content .structured-table th:last-child,
+.structured-content .structured-table td:last-child {
+  border-right: 0;
+}
+
+.structured-content .structured-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.structured-content .structured-table [data-align="left"] {
+  text-align: left;
+}
+
+.structured-content .structured-table [data-align="center"] {
+  text-align: center;
+}
+
+.structured-content .structured-table [data-align="right"] {
+  text-align: right;
+}

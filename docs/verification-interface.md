@@ -124,6 +124,49 @@ Reprendre les sept formats du tableau en espace MJ et en espace joueur, pour **L
 - Importer un JSON fictif comprenant les sept valeurs `place`, `npc`, `faction`, `cosmogony`, `history`, `culture` et `knowledge`. Vérifier le classement des fiches, leur état privé, le rejet d’un type inconnu et la conservation des fiches déjà présentes lors d’un nouvel import.
 - À 320 px et 390 px, vérifier que les formulaires de création, les confirmations et la fenêtre d’import restent dans la fenêtre, avec des cibles tactiles et un focus visibles.
 
+## Organigrammes : vérification du 8 octobre 2026
+
+Le lecteur et l’aperçu du formulaire utilisent le même rendu pour les callouts Obsidian. Les huit tests du parseur et les six tests de l’outil d’export portent sur la hiérarchie, les blocs multiples, la conservation du texte ordinaire, les limites, les formats incorrects et le contenu HTML affiché comme texte. La suite complète passe : **86 tests**. TypeScript et la compilation Vite passent également.
+
+Les contrôles Playwright utilisent le composant réel avec une API en mémoire, sans session ni client Supabase. Le schéma provient d’un export local ; il reste hors du code publié. Toutes les requêtes hors loopback sont bloquées. Aucune erreur d’exécution ni requête extérieure n’a été relevée.
+
+- À 1280 × 900, les rangées ont deux colonnes ; à 390 × 844 et 320 × 568, elles passent à une seule colonne sans débordement horizontal.
+- Le texte avant et après le schéma reste visible. Les flèches, les groupes et les descriptions restent dans leur cadre.
+- Dans le formulaire, l’aperçu suit une modification du texte avant l’enregistrement. Enregistrer conserve le schéma, les paragraphes extérieurs et l’état de brouillon.
+- Le CSS du coffre et celui du site sont identiques. L’extrait est activé dans la configuration du coffre ; le rendu dans l’application Obsidian elle-même n’a pas été contrôlé visuellement.
+
+Le harness, l’export, les résultats et les captures restent dans `.private/organigrammes-*` et `.private/organigramme-*`. Aucun contenu de fiche en ligne n’a été remplacé et aucune nouvelle version du site n’a été publiée pendant ces essais.
+
+## Tableaux : vérification du 8 octobre 2026
+
+Les tableaux Markdown utilisent le même composant dans le lecteur et l’aperçu du formulaire. Les sept tests du parseur couvrent les alignements, les cellules vides, les séparateurs échappés, les retours CRLF, les blocs multiples, les exemples clôturés et les limites. Trois tests de rendu vérifient la coexistence avec un organigramme et du texte, le HTML affiché littéralement et la conservation complète d’un tableau incorrect. La suite complète passe : **96 tests**. TypeScript et la compilation Vite passent également.
+
+Le composant réel a été contrôlé avec des données fictives et une API en mémoire, sans client de base de données. Toutes les requêtes hors loopback sont bloquées ; aucune erreur d’exécution ni requête extérieure n’a été relevée.
+
+- Le lecteur MJ a été vérifié à 1280 × 900, 390 × 844 et 320 × 568. Le lecteur joueur a été vérifié à 390 × 844. Les alignements restent corrects et les tableaux défilent horizontalement dans leur cadre sans élargir la page.
+- **Ajouter un tableau** conserve le texte existant et ajoute le modèle à sa suite. Dans un champ vide, le modèle commence directement par l’en-tête. L’aperçu suit les modifications de cellules avant l’enregistrement.
+- Enregistrer puis rouvrir conserve exactement le texte saisi et l’état de brouillon. Le bouton respecte la limite de 6 000 caractères, y compris à la frontière exacte.
+- À 390 px et 320 px, le bouton et l’aperçu restent dans le formulaire ; le défilement horizontal du tableau fonctionne.
+
+Le harness, les résultats et les captures restent dans `.private/tableaux-*` et `.private/tableau-*`. Les fichiers du site ont été compilés dans un dossier temporaire. Aucune donnée de fiche en ligne n’a été modifiée et aucune nouvelle version du site n’a été publiée pendant ces essais.
+
+## Éditeur et pièces jointes : vérification du 8 octobre 2026
+
+Les fiches MJ et les notes des joueurs utilisent l’éditeur Visuel/Texte. Les exemples historiques « Aperçu de la présentation » ci-dessus décrivent l’interface antérieure ; cet aperçu est désormais l’onglet **Visuel**. Les trois tests de validation de fichiers, les six tests de mise en forme et les quatorze tests PostgreSQL des pièces jointes s’ajoutent aux tests précédents. La suite complète passe : **119 tests**. TypeScript et la compilation Vite passent également.
+
+Les essais navigateur utilisent le composant réel avec des fichiers fictifs et une API en mémoire. Ils ont vérifié :
+
+- Les bascules Visuel/Texte sans modification de la source CRLF, le gras, l’annulation/rétablissement, l’édition directe d’une cellule et l’enregistrement d’une fiche MJ avec fichier Markdown.
+- La conservation de la source d’un organigramme lors d’une modification voisine ; une suppression visuelle de sa carte ou une insertion de lien dans une sélection qui le traverse sont refusées. Les liens avec des parenthèses et les sauts de ligne terminaux restent conservés.
+- Le dépôt des quatre familles de fichiers dans une note de joueur, l’enregistrement, le téléchargement par Blob privé et le retrait d’un fichier à la prochaine sauvegarde.
+- La conservation du texte et des quatre fichiers après un échec d’enregistrement simulé, puis une nouvelle tentative réussie.
+- Le refus d’un fichier de 2 000 001 octets et d’un exécutable ; le glisser-déposer et le retrait d’un fichier temporaire.
+- À 1280 × 1000, 390 × 844 et 320 × 568, le formulaire reste dans la page sans débordement horizontal. La barre d’outils se répartit sur plusieurs rangées sur mobile.
+
+Les tests PGlite vérifient les autorisations des RPC et des objets Storage, les extensions/MIME, la limite de 2 000 000 octets, les métadonnées finales, les listes de fichiers sauvegardées en transaction, les conflits de version, l’isolation par campagne/auteur et les droits après suppression ou retrait de publication. Le nettoyage Storage exige d’abord l’abandon de la réservation verrouillée : un objet actif ne peut pas être effacé pendant son association au contenu. Une réexécution du script conserve les données.
+
+Aucune erreur navigateur ni requête hors loopback n’a été relevée. Le harness, les résultats et les captures restent dans `.private/editeur-*`. Les essais ne téléversent pas de fichier sur le service Storage réel et ne constituent pas un essai distant de bout en bout. Le script `supabase/attachments.sql` est prêt à appliquer après les scripts existants ; ni la base distante ni le site publié n’ont été modifiés pendant cette tâche.
+
 ## Limites
 
 Ces essais valident les dimensions et les interactions dans un navigateur de bureau. Ils ne remplacent pas des essais sur un appareil physique, notamment Safari iOS, le clavier virtuel, les barres du navigateur mobile et les technologies d’assistance. Les captures et les jeux de données de test restent locaux dans `.private/` et ne sont pas publiés.

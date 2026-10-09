@@ -1,0 +1,16 @@
+.attachment-list{margin:14px 0;color:#354c57;font-size:14px;min-width:0}
+.attachment-heading{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-weight:600}
+.attachment-heading>span{font-weight:400}
+.attachment-list ul{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.attachment-list li{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#e9efec;border:1px solid #bdcdca;border-radius:4px;min-width:0}
+.attachment-list li>svg{flex-shrink:0}
+.attachment-name{display:flex;flex-direction:column;flex:1;min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.attachment-name small{color:#536b76;font-size:12px}
+.attachment-action{display:flex;align-items:center;justify-content:center;min-width:34px;min-height:34px;padding:6px;color:#365962;border:1px solid transparent;border-radius:3px;background:transparent;flex-shrink:0;cursor:pointer}
+.attachment-action:hover{background:#d8e4df;border-color:#b9cace}
+.attachment-action:focus-visible{outline:2px solid #b89964;outline-offset:2px}
+.attachment-action:disabled{opacity:.5;cursor:default}
+.attachment-status{font-size:14px;color:#536b76}
+.annotations .attachment-heading{color:#dbe6eb}
+.annotations .attachment-status{color:#b0c5ce}
+@media(max-width:1024px){.attachment-action{min-width:44px;min-height:44px}.attachment-list li{gap:6px;padding:6px}}

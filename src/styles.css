@@ -1,6 +1,21 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "./vendor/shadcn-tailwind-4.13.0.css";
+@import "./styles/organigrammes.css";
+@import "./styles/tableaux.css";
+.structured-content-plain{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9;margin:0 0 20px}
+.structured-heading{font-family:'Segoe UI',Arial,sans-serif;font-weight:600;line-height:1.4;margin:18px 0 12px}
+.structured-list{padding-left:24px;margin:12px 0 20px;line-height:1.8;overflow-wrap:anywhere}
+.structured-quote{border-left:3px solid #b89964;padding:6px 14px;margin:14px 0 20px;white-space:pre-wrap;font-style:italic;overflow-wrap:anywhere}
+.structured-code{font-family:Consolas,'Courier New',monospace;white-space:pre-wrap;overflow-wrap:anywhere;padding:12px;background:#456c750c;border:1px solid #c6d2cf;border-radius:4px;font-size:14px}
+.structured-link{color:#285f89;text-decoration:underline;overflow-wrap:anywhere}
+.annotation .structured-link{color:#b5dcee}
+.annotation .structured-content-plain{margin-bottom:10px;line-height:1.6}
+.annotation .structured-content{font-size:14px}
+.annotation .structured-table-scroll{margin:10px 0 16px}
+.annotation .structured-table th{background:#284753;color:#edf3f5}
+.annotation .structured-table td{color:#dbe6eb}
+.annotation .structured-table tbody tr:nth-child(even){background:#456c7533}
 .fiche-management{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .danger.secondary{border-color:#b47770;color:#91382f}
 .danger.primary{background:#a33f37;color:#fff}

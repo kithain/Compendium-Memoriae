@@ -9,6 +9,10 @@ import type { Annotation, Fiche, FicheDraft, FicheType } from './lib/fiches';
 import { emptyFiche, ficheTypes, isFicheType } from './lib/fiches';
 import { loreCategories } from './lib/lore';
 import FicheImage from './components/FicheImage';
+import StructuredContent from './components/StructuredContent';
+import RichTextEditor from './components/RichTextEditor';
+import AttachmentList from './components/AttachmentList';
+import {MAX_ATTACHMENTS,validateAttachmentFile,type Attachment,type AttachmentTarget} from './lib/attachments';
 import { Tabs, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Checkbox } from './components/ui/checkbox';
 import {
@@ -73,6 +77,10 @@ export default function Compendium({
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [annotationBody, setAnnotationBody] = useState('');
   const [editingAnnotation, setEditingAnnotation] = useState<Annotation | null>(null);
+  const [ficheFiles,setFicheFiles] = useState<Attachment[]>([]);
+  const [noteFiles,setNoteFiles] = useState<Attachment[]>([]);
+  const [fileUploading,setFileUploading] = useState(false);
+  const fileInFlight = useRef(false);
   const [noteDeleteTarget, setNoteDeleteTarget] = useState<Annotation | null>(null);
   const [noteDeleteError, setNoteDeleteError] = useState('');
   const [noteDeleting, setNoteDeleting] = useState(false);
@@ -113,8 +121,10 @@ export default function Compendium({
   const selected = id ? collection.find(fiche => fiche.id === id) ?? null : collection[0] ?? null;
   const gmView = isGM && !preview;
   const dirty = (!!draft && JSON.stringify(draft) !== JSON.stringify(base ? asDraft(base) : firstDraft.current))
-    || annotationBody !== (editingAnnotation?.body ?? '');
-  const busy = saving || noteSaving || noteDeleting || leaving || moving;
+    || (!!draft && JSON.stringify(ficheFiles.map(file=>file.id)) !== JSON.stringify((base?.attachments??[]).map(file=>file.id)))
+    || annotationBody !== (editingAnnotation?.body ?? '')
+    || JSON.stringify(noteFiles.map(file=>file.id)) !== JSON.stringify((editingAnnotation?.attachments??[]).map(file=>file.id));
+  const busy = saving || noteSaving || noteDeleting || leaving || moving || fileUploading;
   const state = useRef({ dirty, busy, selected });
   state.current = { dirty, busy, selected };
 
@@ -254,14 +264,69 @@ export default function Compendium({
     } else runAction(action);
   }
 
-  function resetNote() {
+  function discardPending(files:Attachment[],existing:Attachment[]) {
+    const discardFile=api.discardAttachment;
+    if(discardFile)void Promise.allSettled(files.filter(file=>!existing.some(saved=>saved.id===file.id)).map(discardFile));
+  }
+
+  async function uploadFiles(files:File[],target:AttachmentTarget) {
+    if(busy||fileInFlight.current||!api.uploadAttachment)return;
+    const ownerId=target==='fiche'?base?.id:selected?.id;
+    if(target==='annotation'&&!ownerId)return;
+    if(target==='annotation')noteFicheId.current=ownerId!;
+    const current=target==='fiche'?ficheFiles:noteFiles;
+    const setter=target==='fiche'?setFicheFiles:setNoteFiles;
+    const setFailure=target==='fiche'?setSaveError:setNoteError;
+    const generation=lifecycle.current,currentApi=api;
+    fileInFlight.current=true;setFileUploading(true);setFailure('');
+    const failures:string[]=[];
+    let count=current.length;
+    try {
+      for(const file of files) {
+        if(count>=MAX_ATTACHMENTS){failures.push(`Un contenu accepte au maximum ${MAX_ATTACHMENTS} pièces jointes.`);break;}
+        try {
+          await validateAttachmentFile(file);
+          const uploaded=await currentApi.uploadAttachment!(file,target,ownerId);
+          if(!mounted.current||generation!==lifecycle.current||apiRef.current!==currentApi){
+            void currentApi.discardAttachment?.(uploaded).catch(()=>{});break;
+          }
+          setter(previous=>[...previous,uploaded]);count++;
+        } catch(cause){failures.push(message(cause,`${file.name} : dépôt impossible.`));}
+      }
+      if(mounted.current&&generation===lifecycle.current&&apiRef.current===currentApi)setFailure(failures.join('\n'));
+    } finally {
+      fileInFlight.current=false;
+      if(mounted.current&&generation===lifecycle.current&&apiRef.current===currentApi)setFileUploading(false);
+    }
+  }
+
+  async function removeFile(file:Attachment,target:AttachmentTarget) {
+    if(busy||fileInFlight.current)return;
+    const existing=target==='fiche'?base?.attachments:editingAnnotation?.attachments;
+    const setter=target==='fiche'?setFicheFiles:setNoteFiles;
+    if(existing?.some(saved=>saved.id===file.id)){setter(previous=>previous.filter(value=>value.id!==file.id));return;}
+    const setFailure=target==='fiche'?setSaveError:setNoteError;
+    const currentApi=api,generation=lifecycle.current;
+    fileInFlight.current=true;setFileUploading(true);setFailure('');
+    try{
+      await currentApi.discardAttachment?.(file);
+      if(mounted.current&&generation===lifecycle.current&&apiRef.current===currentApi)setter(previous=>previous.filter(value=>value.id!==file.id));
+    }catch(cause){if(mounted.current&&generation===lifecycle.current)setFailure(message(cause,'Retrait du fichier impossible.'));}
+    finally{fileInFlight.current=false;if(mounted.current&&generation===lifecycle.current)setFileUploading(false);}
+  }
+
+  function resetNote(discardFiles=true) {
+    if(discardFiles)discardPending(noteFiles,editingAnnotation?.attachments??[]);
+    setNoteFiles([]);
     setAnnotationBody('');
     setEditingAnnotation(null);
     setNoteError('');
     noteFicheId.current = null;
   }
 
-  function closeEditor() {
+  function closeEditor(discardFiles=true) {
+    if(discardFiles)discardPending(ficheFiles,base?.attachments??[]);
+    setFicheFiles([]);
     setDraft(null);
     setBase(null);
     setSaveError('');
@@ -269,9 +334,11 @@ export default function Compendium({
 
   function start() {
     guard(() => {
+      discardPending(ficheFiles,base?.attachments??[]);
       const fresh = emptyFiche(type);
       firstDraft.current = fresh;
       setBase(null);
+      setFicheFiles([]);
       setDraft(fresh);
       setSaveError('');
       resetNote();
@@ -281,7 +348,9 @@ export default function Compendium({
   function edit() {
     if (!selected || !gmView) return;
     guard(() => {
+      discardPending(ficheFiles,base?.attachments??[]);
       setBase(selected);
+      setFicheFiles(selected.attachments??[]);
       setDraft(asDraft(selected));
       setSaveError('');
       resetNote();
@@ -297,7 +366,8 @@ export default function Compendium({
     setSaving(true);
     setSaveError('');
     try {
-      const result = await currentApi.saveFiche(draft, base?.id, base?.version);
+      const result = await currentApi.saveFiche(draft, base?.id, base?.version,
+        ficheFiles.length||base?.attachments?.length?ficheFiles.map(file=>file.id):undefined);
       if (!mounted.current || lifecycle.current !== generation || apiRef.current !== currentApi) return;
       ++listGeneration.current;
       setFiches(previous => [result, ...previous.filter(fiche => fiche.id !== result.id)]
@@ -305,7 +375,7 @@ export default function Compendium({
       setId(result.id);
       setType(result.type);
       if (result.type !== type) setQuery('');
-      closeEditor();
+      closeEditor(false);
       toast.success(result.published ? 'La fiche est visible par les joueurs.' : 'Le brouillon est enregistré.');
     } catch (cause) {
       if (mounted.current && lifecycle.current === generation && apiRef.current === currentApi) {
@@ -334,13 +404,14 @@ export default function Compendium({
     try {
       const result = await currentApi.saveAnnotation({
         ficheId, id: editingAnnotation?.id, body: annotationBody, version: editingAnnotation?.version,
+        attachmentIds:noteFiles.length||editingAnnotation?.attachments?.length?noteFiles.map(file=>file.id):undefined,
       });
       if (!mounted.current || lifecycle.current !== generation || apiRef.current !== currentApi) return;
       ++noteGeneration.current;
       setAnnotations(result);
       setFiches(previous => previous.map(fiche => fiche.id === ficheId
         ? { ...fiche, annotationCount: result.length } : fiche));
-      resetNote();
+      resetNote(false);
       toast.success('Votre annotation est enregistrée.');
     } catch (cause) {
       if (mounted.current && lifecycle.current === generation && apiRef.current === currentApi) {
@@ -497,8 +568,7 @@ export default function Compendium({
                 </div>
                 <label className="field-label" htmlFor="fiche-summary">Présentation courte</label>
                 <textarea id="fiche-summary" className="summary-input" value={draft.summary} onChange={event => setDraft({ ...draft, summary: event.target.value })} required maxLength={300} placeholder={editorCategory.summaryPlaceholder} />
-                <label className="field-label" htmlFor="fiche-description">Informations révélées</label>
-                <textarea id="fiche-description" value={draft.description} onChange={event => setDraft({ ...draft, description: event.target.value })} maxLength={6000} placeholder={editorCategory.descriptionPlaceholder} />
+                <RichTextEditor id="fiche-description" label="Informations révélées" value={draft.description} onChange={description=>setDraft({...draft,description})} disabled={busy} onFiles={api.uploadAttachment?files=>uploadFiles(files,'fiche'):undefined} attachmentSlot={<><AttachmentList files={ficheFiles} load={api.loadAttachment} onRemove={file=>removeFile(file,'fiche')} disabled={busy}/>{fileUploading&&<p className="attachment-status" role="status">Dépôt du fichier…</p>}</>}/>
                 <label className="publish-choice"><Checkbox checked={draft.published} onCheckedChange={value => setDraft({ ...draft, published: value === true })} disabled={busy} /><span><strong>Visible par les joueurs</strong><small>Décochez pour garder cette fiche en brouillon MJ.</small></span></label>
                 <p className="editor-help">Cette fiche contient uniquement la version destinée aux joueurs.</p>
                 {saveError && <p className="save-error" role="alert">{saveError}</p>}
@@ -511,23 +581,21 @@ export default function Compendium({
               <div className="fiche-identity"><div className="fiche-large-icon"><Icon size={34} /></div><div>{selected.subtitle && <div className="fiche-role">{selected.subtitle}</div>}<h2>{selected.name}</h2>{selected.location && <div className="fiche-location"><MapPin size={15} />{selected.location}</div>}</div></div>
               <p className="fiche-summary">{selected.summary}</p>
               {selected.imagePath && !trash && <FicheImage key={selected.imagePath} path={selected.imagePath} name={selected.name} load={api.loadImage}/>}
-              {selected.description && <div className="revealed"><h3>Ce que vous savez</h3><p>{selected.description}</p></div>}
+              {selected.description && <div className="revealed"><h3>Ce que vous savez</h3><StructuredContent text={selected.description} /></div>}
+              {!trash&&<AttachmentList files={selected.attachments??[]} load={api.loadAttachment}/>}
               <div className="fiche-official-footer"><span>{trash ? 'Fiche supprimée le' : 'Fiche mise à jour le'} {stamp(selected.deletedAt || selected.updatedAt)}</span>{gmView && <div className="fiche-management">{trash ? <button className="secondary" disabled={busy} onClick={() => void moveFiche(selected, true)}><Undo2 size={15}/>{moving ? 'Restauration…' : 'Restaurer en brouillon'}</button> : <><button className="secondary" onClick={edit} disabled={busy}><Pencil size={15} />Modifier la fiche</button><button className="secondary danger" disabled={busy} onClick={() => guard(() => {setDeleteError(''); setDeleteTarget(selected);})}><Trash2 size={15}/>Supprimer</button></>}</div>}</div>
             </article>
             {!trash && <section className="annotations" aria-label="Annotations des joueurs">
               <div className="annotations-heading"><h2>Notes du groupe <span>({annotations.length})</span></h2></div>
               {noteLoading ? <p className="annotation-help" role="status">Chargement des annotations…</p> : annotations.length ? <div className="annotation-list">{annotations.map(note =>
                 <article key={note.id} className={`annotation${note.deletedAt ? ' annotation-deleted' : ''}`}><header><div className="annotation-author"><strong>{note.author}</strong><time dateTime={note.deletedAt || note.updatedAt} title={`${note.deletedAt ? 'Supprimé le ' : note.updatedAt !== note.createdAt ? 'Modifiée le ' : ''}${stamp(note.deletedAt || note.updatedAt)}`} aria-label={`${note.deletedAt ? 'Supprimé le ' : note.updatedAt !== note.createdAt ? 'Modifiée le ' : ''}${stamp(note.deletedAt || note.updatedAt)}`}>{noteDate(note.deletedAt || note.updatedAt)}</time></div><div className="annotation-tools">{note.canEdit && !note.deletedAt && <button className="icon-button" aria-label={`Modifier votre annotation du ${stamp(note.updatedAt)}`} onClick={() => guard(() => {
-                  noteFicheId.current = note.ficheId; setEditingAnnotation(note); setAnnotationBody(note.body); setNoteError('');
-                })} disabled={busy}><Pencil size={15} /></button>}{note.canDelete && !note.deletedAt && <button className="icon-button danger" aria-label={`Supprimer votre annotation du ${stamp(note.updatedAt)}`} disabled={busy} onClick={event => {noteDeleteTrigger.current = event.currentTarget; setNoteDeleteError(''); setNoteDeleteTarget(note);}}><Trash2 size={15}/></button>}</div></header><p>{note.deletedAt ? 'Message supprimé par l’utilisateur.' : note.body}</p></article>,
+                  discardPending(noteFiles,editingAnnotation?.attachments??[]); noteFicheId.current = note.ficheId; setEditingAnnotation(note); setAnnotationBody(note.body); setNoteFiles(note.attachments??[]); setNoteError('');
+                })} disabled={busy}><Pencil size={15} /></button>}{note.canDelete && !note.deletedAt && <button className="icon-button danger" aria-label={`Supprimer votre annotation du ${stamp(note.updatedAt)}`} disabled={busy} onClick={event => {noteDeleteTrigger.current = event.currentTarget; setNoteDeleteError(''); setNoteDeleteTarget(note);}}><Trash2 size={15}/></button>}</div></header>{note.deletedAt?<p>Message supprimé par l’utilisateur.</p>:<><StructuredContent text={note.body}/><AttachmentList files={note.attachments??[]} load={api.loadAttachment}/></>}</article>,
               )}</div> : <p className="annotation-empty">Aucune annotation pour le moment.</p>}
               <form className="annotation-form" onSubmit={event => { event.preventDefault(); void saveNote(); }}>
-                <label htmlFor="annotation-body" className={editingAnnotation ? undefined : 'sr-only'}>{editingAnnotation ? 'Modifier votre annotation' : 'Ajouter une annotation'}</label>
-                <textarea id="annotation-body" value={annotationBody} onChange={event => {
-                  noteFicheId.current = selected.id; setAnnotationBody(event.target.value);
-                }} rows={2} required maxLength={6000} disabled={busy} placeholder="Écrire une note…" />
+                <RichTextEditor id="annotation-body" label={editingAnnotation?'Modifier votre annotation':'Ajouter une annotation'} value={annotationBody} onChange={text=>{noteFicheId.current=selected.id;setAnnotationBody(text);}} disabled={busy} onFiles={api.uploadAttachment?files=>uploadFiles(files,'annotation'):undefined} attachmentSlot={<><AttachmentList files={noteFiles} load={api.loadAttachment} onRemove={file=>removeFile(file,'annotation')} disabled={busy}/>{fileUploading&&<p className="attachment-status" role="status">Dépôt du fichier…</p>}</>}/>
                 {noteError && <p className="save-error" role="alert">{noteError}</p>}
-                <div className="annotation-actions"><div>{editingAnnotation && <button type="button" className="secondary" onClick={() => guard(resetNote)} disabled={busy}>Annuler</button>}<button type="submit" className="primary" disabled={!annotationBody.trim() || busy}>{noteSaving ? 'Enregistrement…' : editingAnnotation ? 'Enregistrer' : 'Ajouter'}</button></div></div>
+                <div className="annotation-actions"><div>{(editingAnnotation||annotationBody||noteFiles.length>0) && <button type="button" className="secondary" onClick={() => guard(resetNote)} disabled={busy}>Annuler</button>}<button type="submit" className="primary" disabled={!annotationBody.trim() || busy}>{noteSaving ? 'Enregistrement…' : editingAnnotation ? 'Enregistrer' : 'Ajouter'}</button></div></div>
               </form>
             </section>}
           </> : <article className="journal-page">

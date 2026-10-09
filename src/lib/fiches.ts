@@ -1,9 +1,11 @@
+import type {Attachment} from './attachments';
+
 export const ficheTypes=['place','npc','faction','cosmogony','history','culture','knowledge'] as const;
 export type FicheType=typeof ficheTypes[number];
 export function isFicheType(value:string):value is FicheType{return ficheTypes.some(type=>type===value);}
 export type FicheDraft={type:FicheType;name:string;subtitle:string;location:string;summary:string;description:string;published:boolean};
-export type Fiche=FicheDraft & {id:string;updatedAt:string;version:number;annotationCount:number;imagePath?:string|null;deletedAt?:string|null};
-export type Annotation={id:string;ficheId:string;body:string;author:string;createdAt:string;updatedAt:string;version:number;canEdit:boolean;canDelete?:boolean;deletedAt?:string|null};
+export type Fiche=FicheDraft & {id:string;updatedAt:string;version:number;annotationCount:number;imagePath?:string|null;deletedAt?:string|null;attachments?:Attachment[]};
+export type Annotation={id:string;ficheId:string;body:string;author:string;createdAt:string;updatedAt:string;version:number;canEdit:boolean;canDelete?:boolean;deletedAt?:string|null;attachments?:Attachment[]};
 export function emptyFiche(type:FicheType):FicheDraft{return {type,name:'',subtitle:'',location:'',summary:'',description:'',published:false};}
 export function validateFiche(input:unknown):FicheDraft|null{
   if(!input||typeof input!=='object')return null;

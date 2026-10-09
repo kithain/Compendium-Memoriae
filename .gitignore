@@ -5,3 +5,4 @@ dist/
 !.env.example
 *.tsbuildinfo
 public/images/
+/lancer-local.cmd

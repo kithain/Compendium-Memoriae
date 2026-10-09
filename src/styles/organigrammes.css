@@ -1,0 +1,273 @@
+/* Même feuille dans le Compendium et les extraits CSS Obsidian. */
+.callout[data-callout="organigramme"] {
+  --callout-color: 224, 224, 224;
+  --callout-padding: 18px 12px 14px;
+  container: organigramme / inline-size;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  margin: 20px 0;
+  padding: 18px 12px 14px;
+  border: 1px solid #2d2d2d;
+  border-radius: 12px;
+  background: #050505;
+  color: #f2f2f2;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.callout[data-callout="organigramme"] *,
+.callout[data-callout="organigramme"] *::before,
+.callout[data-callout="organigramme"] *::after {
+  box-sizing: border-box;
+}
+
+.callout[data-callout="organigramme"] .callout {
+  --callout-color: 224, 224, 224;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 15px 16px;
+  border: 1px solid #303638;
+  border-radius: 6px;
+  background: #070c0e;
+  color: #f2f2f2;
+  mix-blend-mode: normal;
+}
+
+.callout[data-callout="organigramme"] .callout-icon {
+  display: none;
+}
+
+.callout[data-callout="organigramme"] .callout-title {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  color: #f2f2f2;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.callout[data-callout="organigramme"] .callout-title-inner {
+  min-width: 0;
+  max-width: 100%;
+  font: inherit;
+  color: inherit;
+  overflow-wrap: anywhere;
+}
+
+.callout[data-callout="organigramme"] > .callout-title {
+  margin: 0 0 12px;
+  color: #aaaaaa;
+  font-size: 11px;
+  letter-spacing: .08em;
+}
+
+.callout[data-callout="organigramme"] .callout-content {
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  color: inherit;
+  overflow: visible;
+}
+
+.callout[data-callout="organigramme"] > .callout-content,
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"] > .callout-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.callout[data-callout="organigramme"] p,
+.callout[data-callout="organigramme"] .organigramme-texte {
+  margin: 7px 0 0;
+  padding: 0;
+  color: inherit;
+  font-family: Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.callout[data-callout="organigramme"] .organigramme-texte {
+  white-space: pre-wrap;
+}
+
+.callout[data-callout="organigramme"] h1,
+.callout[data-callout="organigramme"] h2,
+.callout[data-callout="organigramme"] h3,
+.callout[data-callout="organigramme"] h4,
+.callout[data-callout="organigramme"] h5,
+.callout[data-callout="organigramme"] h6 {
+  margin: 7px 0 0;
+  padding: 0;
+  color: inherit;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: normal;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="autorite-principale"] {
+  border-color: #555555;
+  background: #303030;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="autorite-arbitrage"] {
+  border-color: #3e3726;
+  background: #151106;
+}
+
+.callout[data-callout="organigramme"] > .callout-content > .callout[data-callout="autorite"]:first-child {
+  padding: 10px 16px;
+  border: 0;
+  background: transparent;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-ligne"] {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-ligne"] > .callout-content {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: stretch;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-ligne"] > .callout-title,
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"] > .callout-title,
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-note"] > .callout-title {
+  display: none;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-ligne"] .callout-title {
+  font-size: 14px;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"] {
+  margin-top: 8px;
+  padding: 14px 12px;
+  border-color: #2d2d2d;
+  background: transparent;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"] > .callout-content > .callout[data-callout="autorite"] {
+  padding: 3px 12px;
+  border: 0;
+  background: transparent;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"]:has(> .callout-content > .callout[data-callout="organigramme-ligne"]) {
+  margin-top: 16px;
+  padding: 24px 0 0;
+  border: 0;
+  border-top: 1px solid #2d2d2d;
+  border-radius: 0;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"]:has(> .callout-content > .callout[data-callout="organigramme-ligne"]) > .callout-title {
+  display: flex;
+  margin-bottom: 7px;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"] > .callout-content > p:first-child,
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-groupe"] > .callout-content > .organigramme-texte:first-child {
+  margin-top: 0;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-fleche"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-fleche"] > .callout-title {
+  flex: 0 0 auto;
+  color: #b5b5b5;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.callout[data-callout="organigramme"] > .callout-content > .callout[data-callout="organigramme-ligne"] + .callout[data-callout="organigramme-fleche"] {
+  width: calc(50% - 4px);
+  align-self: flex-end;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-fleche"] > .callout-content:empty {
+  display: none;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-fleche"] p,
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-fleche"] .organigramme-texte {
+  margin: 0;
+  font-size: 12px;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-note"] {
+  padding: 0 10px;
+  border: 0;
+  background: transparent;
+}
+
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-note"] p,
+.callout[data-callout="organigramme"] .callout[data-callout="organigramme-note"] .organigramme-texte {
+  margin: 0;
+  font-size: 13px;
+}
+
+.callout[data-callout="organigramme"] a {
+  color: #ebc38b;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.callout[data-callout="organigramme"] a:hover {
+  color: #ffdda8;
+}
+
+.callout[data-callout="organigramme"] a:focus-visible {
+  outline: 2px solid #ebc38b;
+  outline-offset: 3px;
+}
+
+@container organigramme (max-width: 420px) {
+  .callout[data-callout="organigramme"] .callout[data-callout="organigramme-ligne"] > .callout-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .callout[data-callout="organigramme"] > .callout-content > .callout[data-callout="organigramme-ligne"] + .callout[data-callout="organigramme-fleche"] {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+@supports not (container-type: inline-size) {
+  @media (max-width: 640px) {
+    .callout[data-callout="organigramme"] .callout[data-callout="organigramme-ligne"] > .callout-content {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

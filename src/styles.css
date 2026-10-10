@@ -22,6 +22,12 @@
 .danger.primary:hover{background:#872f29}
 .fiche-illustration{margin:20px auto 26px;width:min(100%,400px);aspect-ratio:4/3;border:1px solid #c9d1cf;border-radius:5px;overflow:hidden;background:#e3e9e6;display:grid;place-items:center}
 .fiche-illustration img{display:block;width:100%;height:100%;object-fit:contain}
+.fiche-image-editor{min-width:0;border-block:1px solid #d2dcda;padding:18px 0;margin:0 0 20px}
+.fiche-image-editor h3{font-family:'Segoe UI',Arial,sans-serif;font-size:1rem;color:#304c59;margin:0 0 12px}
+.fiche-image-editor .fiche-illustration{width:min(100%,240px);margin:0 auto 16px}
+.fiche-image-editor input{display:block;box-sizing:border-box;width:100%;min-width:0;min-height:44px;border:1px solid #b3c7cb;background:#f8faf9;color:#304c59;border-radius:4px;padding:10px 12px;font-family:Consolas,monospace;font-size:1rem}
+.fiche-image-editor .editor-help,.image-editor-empty,.image-editor-status{font-size:.875rem;color:#57727e;line-height:1.5;margin:10px 0 0;overflow-wrap:anywhere}
+.image-editor-empty{margin:0 0 14px}
 .fiche-illustration p{margin:0;padding:20px;text-align:center;font-size:.875rem;color:#526874}
 :root{--background:#10212d;--foreground:#edf4f5;--card:#142b38;--card-foreground:#edf4f5;--popover:#16313f;--popover-foreground:#edf4f5;--primary:#cf9e61;--primary-foreground:#152530;--secondary:#203a46;--secondary-foreground:#edf4f5;--muted:#20313c;--muted-foreground:#b4c2c9;--accent:#294653;--accent-foreground:#edf4f5;--destructive:#ee867f;--border:#344853;--input:#435965;--ring:#d4b17e;--radius:.5rem}
 @theme inline{--color-background:var(--background);--color-foreground:var(--foreground);--color-card:var(--card);--color-card-foreground:var(--card-foreground);--color-popover:var(--popover);--color-popover-foreground:var(--popover-foreground);--color-primary:var(--primary);--color-primary-foreground:var(--primary-foreground);--color-secondary:var(--secondary);--color-secondary-foreground:var(--secondary-foreground);--color-muted:var(--muted);--color-muted-foreground:var(--muted-foreground);--color-accent:var(--accent);--color-accent-foreground:var(--accent-foreground);--color-destructive:var(--destructive);--color-border:var(--border);--color-input:var(--input);--color-ring:var(--ring);--radius-sm:calc(var(--radius) - 4px);--radius-md:calc(var(--radius) - 2px);--radius-lg:var(--radius);--font-sans:'Segoe UI',Arial,sans-serif}

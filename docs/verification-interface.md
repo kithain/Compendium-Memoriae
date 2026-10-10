@@ -167,6 +167,35 @@ Les tests PGlite vérifient les autorisations des RPC et des objets Storage, les
 
 Aucune erreur navigateur ni requête hors loopback n’a été relevée. Le harness, les résultats et les captures restent dans `.private/editeur-*`. Les essais ne téléversent pas de fichier sur le service Storage réel et ne constituent pas un essai distant de bout en bout. Le script `supabase/attachments.sql` est prêt à appliquer après les scripts existants ; ni la base distante ni le site publié n’ont été modifiés pendant cette tâche.
 
+## Chemin de l’illustration : vérification du 10 octobre 2026
+
+Le formulaire MJ affiche l’illustration enregistrée et un champ **Chemin de l’image** entre la présentation courte et les informations révélées. Les essais navigateur utilisent le composant réel avec une API en mémoire et des images SVG fictives, sans session ni appel Supabase.
+
+- Remplacement du chemin, enregistrement et réouverture : le nouveau chemin et la nouvelle illustration sont conservés.
+- Retrait par champ vide, puis ajout à une fiche sans image : l’association suit l’enregistrement.
+- Chemin refusé ou erreur réseau simulée : le brouillon reste intact et une nouvelle tentative fonctionne.
+- Quitter après avoir modifié uniquement le chemin déclenche la confirmation ; continuer conserve le chemin et abandonner retrouve la version enregistrée.
+- En rôle joueur, aucun bouton de modification ni champ de chemin n’est présent. Une illustration indisponible ne bloque pas le formulaire MJ.
+- À 1280 × 720, 390 × 844 et 320 × 568, le champ reste dans le panneau. Sur les deux petits formats, la largeur totale de la page reste respectivement de 390 et 320 px ; le champ mesure environ 48 px de haut avec un texte de 16 px. Le chemin long défile dans le champ sans élargir la page.
+
+Aucune erreur navigateur n’a été relevée. Le jeu de données et les captures restent dans `.private/illustration-*`. Ces essais ne remplacent pas une vérification sur un téléphone physique.
+
+La suite passe avec **136 tests**, dont 17 nouveaux cas PostgreSQL consacrés aux illustrations. Ils couvrent les droits MJ, les chemins invalides et absents, la séparation des campagnes, les conflits de version, la conservation des annotations et pièces jointes, les sept catégories, les anciens clients et la réexécution du script. TypeScript et la compilation Vite passent.
+
+Le complément `supabase/illustrations.sql` a été appliqué au projet existant. La vérification distante confirme le refus d’une sauvegarde sans authentification, les droits d’exécution limités aux utilisateurs connectés, le chemin de recherche vide de la fonction et la compatibilité des 135 associations d’image existantes. Aucune fiche ni image de campagne n’a été modifiée par ces vérifications ; aucun nouveau signalement de sécurité n’apparaît par rapport au contrôle initial. Le frontend reste local jusqu’à sa publication avec `publier.cmd`.
+
+## Illustrations GitHub : vérification du 10 octobre 2026
+
+Cette évolution remplace le chemin privé décrit dans la section précédente par un chemin relatif du site, par exemple `images/pnj/borin.jpg`. Le transfert est préparé à partir de 135 associations existantes : 72 PNJ et 63 lieux, soit 5 067 821 octets. Chaque copie locale est comparée à l’empreinte ETag du fichier Supabase, y compris les ETag S3 multipart à une seule partie. Un manifeste privé conserve les anciens chemins, les nouveaux chemins et les empreintes SHA-256.
+
+La suite complète passe avec **142 tests**. Les vingt cas PostgreSQL des illustrations couvrent notamment les sept dossiers publics, l’absence d’objet Storage pour un chemin public, les droits MJ, les versions, les anciennes clés privées et le rejet des liens externes et traversées de dossiers. Les trois tests du chargement public vérifient la base `/Compendium-Memoriae/`, le refus des chemins invalides avant le téléchargement, l’absence de credentials et le refus des erreurs HTTP, redirections, réponses HTML et faux JPG. TypeScript et la compilation Vite passent.
+
+Le build contient uniquement le frontend et les 135 JPG sélectionnés. Il ne contient aucun JSON/TXT annexe ni fichier `.private/`. Le plugin Vite conserve `publicDir:false` et ne sert/copie que les JPG valides placés directement dans les sept dossiers autorisés ; les liens symboliques sont exclus.
+
+Les essais navigateur du composant réel utilisent deux fiches fictives et le chargeur public réel, sans session de campagne. Une illustration de lieu et un portrait PNJ sont chargés depuis les fichiers du site. Le remplacement du chemin, l’enregistrement en mémoire et la réouverture sont vérifiés. À 1280 × 720, 390 × 844 et 320 × 568, le champ reste dans le formulaire, sans débordement horizontal. Aucune erreur navigateur n’a été relevée. Les captures et le harness restent dans `.private/github-images-*`.
+
+La bascule des données doit intervenir après la publication et la vérification HTTP des nouveaux fichiers. Elle ne remplace que les références d’image, augmente les versions des fiches et conserve les textes, états de publication et annotations. Les originaux privés restent disponibles pour revenir à l’ancien stockage si nécessaire.
+
 ## Limites
 
 Ces essais valident les dimensions et les interactions dans un navigateur de bureau. Ils ne remplacent pas des essais sur un appareil physique, notamment Safari iOS, le clavier virtuel, les barres du navigateur mobile et les technologies d’assistance. Les captures et les jeux de données de test restent locaux dans `.private/` et ne sont pas publiés.

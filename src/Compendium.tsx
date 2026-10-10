@@ -49,7 +49,7 @@ const noteDate = (value: string) => new Intl.DateTimeFormat('fr-FR', {
 const asDraft = (fiche: Fiche): FicheDraft => ({
   type: fiche.type, name: fiche.name, subtitle: fiche.subtitle,
   location: fiche.location, summary: fiche.summary,
-  description: fiche.description, published: fiche.published,
+  description: fiche.description, published: fiche.published, imagePath: fiche.imagePath ?? '',
 });
 
 const searchable = (value: string) => value.normalize('NFD')
@@ -568,6 +568,16 @@ export default function Compendium({
                 </div>
                 <label className="field-label" htmlFor="fiche-summary">Présentation courte</label>
                 <textarea id="fiche-summary" className="summary-input" value={draft.summary} onChange={event => setDraft({ ...draft, summary: event.target.value })} required maxLength={300} placeholder={editorCategory.summaryPlaceholder} />
+                <section className="fiche-image-editor" aria-labelledby="fiche-image-heading">
+                  <h3 id="fiche-image-heading">Illustration</h3>
+                  {base?.imagePath && draft.imagePath?.trim()
+                    ? <FicheImage path={base.imagePath} name={draft.name || base.name} load={api.loadImage}/>
+                    : <p className="image-editor-empty">Aucune illustration enregistrée pour ce choix.</p>}
+                  <label className="field-label" htmlFor="fiche-image-path">Chemin de l’image</label>
+                  <input id="fiche-image-path" type="text" value={draft.imagePath ?? ''} onChange={event => setDraft({ ...draft, imagePath: event.target.value })} maxLength={512} autoComplete="off" spellCheck={false} aria-describedby="fiche-image-help" placeholder={`images/${editorCategory.label.toLocaleLowerCase('fr')}/nom.jpg`}/>
+                  <p id="fiche-image-help" className="editor-help">Déposez le JPG dans <code>public/images/{editorCategory.label.toLocaleLowerCase('fr')}/</code>, publiez avec <code>publier.cmd</code>, puis renseignez son chemin. Nom sans espaces ni accents. Images publiques, même en brouillon. Videz le champ pour retirer l’image.</p>
+                  {draft.imagePath?.trim() && draft.imagePath.trim() !== base?.imagePath && <p className="image-editor-status">La nouvelle illustration s’affichera après l’enregistrement.</p>}
+                </section>
                 <RichTextEditor id="fiche-description" label="Informations révélées" value={draft.description} onChange={description=>setDraft({...draft,description})} disabled={busy} onFiles={api.uploadAttachment?files=>uploadFiles(files,'fiche'):undefined} attachmentSlot={<><AttachmentList files={ficheFiles} load={api.loadAttachment} onRemove={file=>removeFile(file,'fiche')} disabled={busy}/>{fileUploading&&<p className="attachment-status" role="status">Dépôt du fichier…</p>}</>}/>
                 <label className="publish-choice"><Checkbox checked={draft.published} onCheckedChange={value => setDraft({ ...draft, published: value === true })} disabled={busy} /><span><strong>Visible par les joueurs</strong><small>Décochez pour garder cette fiche en brouillon MJ.</small></span></label>
                 <p className="editor-help">Cette fiche contient uniquement la version destinée aux joueurs.</p>
